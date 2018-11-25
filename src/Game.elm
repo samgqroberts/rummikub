@@ -4,7 +4,7 @@ import Random exposing (Seed)
 import List
 import List.Extra exposing (getAt, uniqueBy)
 import Tuple
-import Models exposing (Tile, Color(..), Number(..), Group, PlayerHand, GameState)
+import Models exposing (Board, Tile, Color(..), Number(..), Group, PlayerHand, GameState)
 
 createTile : Color -> Number -> Tile
 createTile color number = (color, number)
@@ -62,7 +62,7 @@ newGame seed =
   in
     { unflipped = unflipped
     , playerHands = [playerHand1, playerHand2, playerHand3, playerHand4]
-    , played = []
+    , board = []
     }
 
 getColor : Tile -> Color
@@ -140,3 +140,7 @@ isValidGroup group =
     (allColorsUnique group && allNumbersTheSame group)
     || (allColorsTheSame group && allNumbersSequential group)
   )
+
+isValidBoard : Board -> Bool
+isValidBoard board =
+  List.all isValidGroup board

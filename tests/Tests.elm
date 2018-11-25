@@ -39,9 +39,9 @@ all =
             , expectStartingPlayerTileCount 2
             , expectStartingPlayerTileCount 3
             ] (newGameInst seeder)
-    , fuzz int "new game has 0 played tiles" <|
+    , fuzz int "new game has 0 board tiles" <|
         \seeder ->
-          Expect.equal (List.length (newGameInst seeder).played) 0
+          Expect.equal (List.length (newGameInst seeder).board) 0
     , describe "allColorsTheSame"
       [ test "1 of the same color" <|
           \_ ->
@@ -117,5 +117,20 @@ all =
       , test "2 tile group" <|
           \_ ->
             isValidGroup [(Red, Two), (Red, Three)] |> Expect.equal False
+      ]
+    , describe "isValidBoard"
+      [ test "1 valid group" <|
+          \_ ->
+            isValidBoard [[(Red, Two), (Red, Three), (Red, Four)]] |> Expect.equal True
+      , test "2 valid groups" <|
+          \_ ->
+            isValidBoard [ [(Red, Two), (Red, Three), (Red, Four)]
+                         , [(Blue, Thirteen), (Orange, Thirteen), (Black, Thirteen)]
+                         ] |> Expect.equal True
+      , test "1 valid 1 invalid group" <|
+          \_ ->
+            isValidBoard [ [(Red, Two), (Red, Three), (Red, Four)]
+                         , [(Blue, Thirteen), (Blue, Thirteen), (Black, Thirteen)]
+                         ] |> Expect.equal False
       ]
     ]

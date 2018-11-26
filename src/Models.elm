@@ -25,10 +25,12 @@ type alias Tile = (Color, Number)
 
 type alias Group = List Tile
 type alias PlayerHand = List Tile
+type alias PlayerHands = List PlayerHand
 type alias Board = List Group
+type alias Unflipped = List Tile
 
 type alias GameState =
-  { unflipped : List Tile
+  { unflipped : Unflipped
   , board : Board
-  , playerHands : List PlayerHand
+  , playerHands : PlayerHands
   }

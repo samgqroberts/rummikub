@@ -5,9 +5,7 @@ import List
 import List.Extra exposing (getAt, uniqueBy)
 import Tuple
 import Models exposing (Board, Tile, Color(..), Number(..), Group, PlayerHand, GameState)
-
-createTile : Color -> Number -> Tile
-createTile color number = (color, number)
+import ModelUtils exposing (..)
 
 colors = [Black, Red, Orange, Blue]
 numbers = [One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
@@ -65,45 +63,12 @@ newGame seed =
     , board = []
     }
 
-getColor : Tile -> Color
-getColor tile =
-  Tuple.first tile
-
-getNumber : Tile -> Number
-getNumber tile =
-  Tuple.second tile
-
-colorOrdinal : Color -> Int
-colorOrdinal color =
-  case color of
-    Black -> 0
-    Red -> 1
-    Orange -> 2
-    Blue -> 3
-
-numberOrdinal : Number -> Int
-numberOrdinal number =
-  case number of
-    One -> 1
-    Two -> 2
-    Three -> 3
-    Four -> 4
-    Five -> 5
-    Six -> 6
-    Seven -> 7
-    Eight -> 8
-    Nine -> 9
-    Ten -> 10
-    Eleven -> 11
-    Twelve -> 12
-    Thirteen -> 13
-
 allColorsUnique : Group -> Bool
 allColorsUnique group =
   let
     colorsInGroup = List.map getColor group
   in
-    List.length (uniqueBy colorOrdinal colorsInGroup) == List.length colorsInGroup
+    List.length (uniqueBy colorToInt colorsInGroup) == List.length colorsInGroup
 
 allColorsTheSame : Group -> Bool
 allColorsTheSame group =
@@ -123,7 +88,7 @@ allNumbersSequential : Group -> Bool
 allNumbersSequential group =
   let
     sortedNumbers = List.map getNumber group
-      |> List.map numberOrdinal
+      |> List.map numberToInt
       |> List.sort
   in
     case List.head sortedNumbers of

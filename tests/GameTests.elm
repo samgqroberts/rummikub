@@ -1,4 +1,4 @@
-module Tests exposing (..)
+module GameTests exposing (..)
 
 import Random
 import List.Extra exposing (getAt)
@@ -21,7 +21,7 @@ totalNumTiles = List.length allTiles
 
 all : Test
 all =
-  describe "Rummikub"
+  describe "Game"
     [ test "starting number of tiles" <|
         \_ ->
           Expect.equal (totalNumTiles) (List.length colors * List.length numbers * tileDuplicates)

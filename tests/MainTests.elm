@@ -1,20 +1,24 @@
-module MainTests exposing (..)
+module MainTests exposing (all)
 
-import Random
+import Expect exposing (Expectation)
+import Fuzz exposing (..)
 import List.Extra exposing (getAt)
 import Main exposing (initialState)
-import Test exposing (..)
-import Fuzz exposing (..)
 import Models exposing (..)
-import Expect exposing (Expectation)
+import Random
+import Test exposing (..)
+
 
 all : Test
 all =
-  describe "Main"
-    [ test "initialState imports" <|
-        \_ ->
-          let
-            initialSt = initialState {- TODO this test basically just imports -}
-          in
-            Expect.pass
-    ]
+    describe "Main"
+        [ test "initialState imports" <|
+            \_ ->
+                let
+                    initialSt =
+                        initialState
+
+                    {- TODO this test basically just imports -}
+                in
+                Expect.pass
+        ]

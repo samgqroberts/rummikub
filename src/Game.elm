@@ -33,10 +33,8 @@ tileDuplicates =
     2
 
 
-
-{- how many (Black, One) tiles are there? -}
-
-
+{-| how many (Black, One) tiles are there?
+-}
 numPlayers =
     4
 
@@ -77,10 +75,8 @@ takeRandomTile seed tiles =
     )
 
 
-
--- moves a tile from the first list in the tuple to the second list
-
-
+{-| moves a tile from the first list in the tuple to the second list
+-}
 moveTile : Seed -> ( List Tile, List Tile ) -> ( List Tile, List Tile )
 moveTile seed tileLists =
     let

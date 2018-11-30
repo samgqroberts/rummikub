@@ -19,9 +19,7 @@ type alias Model =
 
 
 initialState =
-    { gameState = newGame <| Random.initialSeed 10
-
-    {- TODO randomize seed -}
+    { gameState = newGame <| Random.initialSeed 10 -- TODO randomize seed
     }
 
 

@@ -18,7 +18,7 @@ all =
                     initialSt =
                         initialState
 
-                    {- TODO this test basically just imports -}
+                    -- TODO this test basically just imports
                 in
                 Expect.pass
         ]

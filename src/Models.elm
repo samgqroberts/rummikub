@@ -52,4 +52,5 @@ type alias GameState =
     { unflipped : Unflipped
     , board : Board
     , playerHands : PlayerHands
+    , playerTurn : Int
     }

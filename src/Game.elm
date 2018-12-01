@@ -1,7 +1,7 @@
-module Game exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, colors, createTilesForColor, isValidBoard, isValidGroup, moveTile, newGame, numPlayers, numbers, startingPlayerTileCount, takeRandomTile, takeTiles, tileDuplicates)
+module Game exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, attemptMove, colors, containsAll, createTilesForColor, defaultNumPlayers, isValidBoard, isValidGroup, listDiff, moveTile, newGame, numbers, replaceAt, startingPlayerTileCount, takeRandomTile, takeTiles, tileDuplicates)
 
 import List
-import List.Extra exposing (getAt, uniqueBy)
+import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import ModelUtils exposing (..)
 import Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
 import Random exposing (Seed)
@@ -35,7 +35,7 @@ tileDuplicates =
 
 {-| how many (Black, One) tiles are there?
 -}
-numPlayers =
+defaultNumPlayers =
     4
 
 
@@ -110,6 +110,7 @@ newGame seed =
     { unflipped = unflipped
     , playerHands = [ playerHand1, playerHand2, playerHand3, playerHand4 ]
     , board = []
+    , playerTurn = 0
     }
 
 
@@ -175,3 +176,113 @@ isValidGroup group =
 isValidBoard : Board -> Bool
 isValidBoard board =
     List.all isValidGroup board
+
+
+removeAt : Int -> List a -> List a
+removeAt index list =
+    splitAt index list
+        |> (\( first, second ) ->
+                List.concat [ first, defaultingToEmptyList (List.tail second) ]
+           )
+
+
+listDiff : List a -> List a -> ( List a, List a )
+listDiff minuend subtrahend =
+    List.foldl
+        (\element ( leftList, rightList ) ->
+            case elemIndex element leftList of
+                Nothing ->
+                    ( leftList, rightList )
+
+                Just leftIndex ->
+                    case elemIndex element rightList of
+                        Nothing ->
+                            -- TODO impossible state
+                            ( leftList, rightList )
+
+                        Just rightIndex ->
+                            ( removeAt leftIndex leftList, removeAt rightIndex rightList )
+        )
+        ( minuend, subtrahend )
+        subtrahend
+
+
+containsAll : List a -> List a -> Bool
+containsAll list1 list2 =
+    let
+        ( _, remaining ) =
+            listDiff list1 list2
+    in
+    List.isEmpty remaining
+
+
+replaceAt : Int -> a -> List a -> Maybe (List a)
+replaceAt index element list =
+    case index >= 0 && List.length list > index of
+        False ->
+            Nothing
+
+        True ->
+            let
+                ( before, after ) =
+                    splitAt index list
+                        |> Tuple.mapSecond (\second -> defaultingToEmptyList (List.tail second))
+            in
+            Just <| List.concat [ before, [ element ], after ]
+
+
+defaultingToEmptyList : Maybe (List a) -> List a
+defaultingToEmptyList aListMaybe =
+    Maybe.withDefault [] aListMaybe
+
+
+numPlayers : GameState -> Int
+numPlayers gameState =
+    List.length gameState.playerHands
+
+
+nextPlayerTurn : GameState -> Int
+nextPlayerTurn gameState =
+    modBy (numPlayers gameState) (gameState.playerTurn + 1)
+
+
+attemptMove : GameState -> Board -> Result String GameState
+attemptMove current newBoard =
+    let
+        currentPlayerHand =
+            defaultingToEmptyList (getAt current.playerTurn current.playerHands)
+
+        newBoardTiles =
+            List.concatMap (\a -> a) newBoard
+
+        currentBoardTiles =
+            List.concatMap (\a -> a) current.board
+
+        ( playedTiles, _ ) =
+            listDiff newBoardTiles currentBoardTiles
+    in
+    case containsAll currentPlayerHand playedTiles of
+        False ->
+            Err "Some played tiles are not in the player's hand"
+
+        True ->
+            case isValidBoard newBoard of
+                False ->
+                    Err "Some played groups are not valid"
+
+                True ->
+                    let
+                        ( newCurrentPlayerHand, _ ) =
+                            listDiff currentPlayerHand playedTiles
+
+                        newPlayerHands =
+                            replaceAt current.playerTurn newCurrentPlayerHand current.playerHands
+                                -- TODO impossible state
+                                |> Maybe.withDefault current.playerHands
+                    in
+                    Ok
+                        { current
+                            | board = newBoard
+                            , playerHands = newPlayerHands
+                            , playerTurn = nextPlayerTurn current
+                        }

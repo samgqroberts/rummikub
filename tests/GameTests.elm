@@ -34,10 +34,10 @@ all =
                 Expect.equal totalNumTiles (List.length colors * List.length numbers * tileDuplicates)
         , fuzz int "new game unflipped num" <|
             \seeder ->
-                Expect.equal (List.length (newGameInst seeder).unflipped) (totalNumTiles - startingPlayerTileCount * numPlayers)
+                Expect.equal (List.length (newGameInst seeder).unflipped) (totalNumTiles - startingPlayerTileCount * defaultNumPlayers)
         , fuzz int "new game player num" <|
             \seeder ->
-                Expect.equal (List.length (newGameInst seeder).playerHands) numPlayers
+                Expect.equal (List.length (newGameInst seeder).playerHands) defaultNumPlayers
         , fuzz int "new game playerhand num tiles" <|
             \seeder ->
                 Expect.all
@@ -155,5 +155,124 @@ all =
                         , [ ( Blue, Thirteen ), ( Blue, Thirteen ), ( Black, Thirteen ) ]
                         ]
                         |> Expect.equal False
+            ]
+        , describe "listDiff"
+            [ test "with one of any element and perfect containment" <|
+                \_ ->
+                    listDiff [ 1, 2, 3 ] [ 1, 2 ]
+                        |> Expect.equal ( [ 3 ], [] )
+            , test "with multiple equal elements" <|
+                \_ ->
+                    listDiff [ 1, 2, 2, 3, 3 ] [ 1, 2 ]
+                        |> Expect.equal ( [ 2, 3, 3 ], [] )
+            , test "with elements in subtrahend not present in minuend" <|
+                \_ ->
+                    listDiff [ 1, 2, 2 ] [ 2, 3 ]
+                        |> Expect.equal ( [ 1, 2 ], [ 3 ] )
+            , test "with empty minuend" <|
+                \_ ->
+                    listDiff [] [ 1 ]
+                        |> Expect.equal ( [], [ 1 ] )
+            , test "with empty subtrahend" <|
+                \_ ->
+                    listDiff [ 1, 2 ] []
+                        |> Expect.equal ( [ 1, 2 ], [] )
+            ]
+        , describe "containsAll"
+            [ test "with one of any element and perfect containment" <|
+                \_ ->
+                    containsAll [ 1, 2, 3 ] [ 1, 2 ]
+                        |> Expect.equal True
+            , test "with one of any element and imperfect containment" <|
+                \_ ->
+                    containsAll [ 1, 2, 3 ] [ 1, 2, 4 ]
+                        |> Expect.equal False
+            , test "with duplicate elements and perfect containment" <|
+                \_ ->
+                    containsAll [ 1, 2, 2, 3, 3 ] [ 1, 2, 2 ]
+                        |> Expect.equal True
+            , test "with dupliacte elements and imperfect containment" <|
+                \_ ->
+                    containsAll [ 1, 2, 2, 3, 3 ] [ 1, 2, 4 ]
+                        |> Expect.equal False
+            ]
+        , describe "replaceAt"
+            [ test "at first index" <|
+                \_ ->
+                    replaceAt 0 0 [ 1, 2, 3 ]
+                        |> Expect.equal (Just [ 0, 2, 3 ])
+            , test "at last index" <|
+                \_ ->
+                    replaceAt 2 0 [ 1, 2, 3 ]
+                        |> Expect.equal (Just [ 1, 2, 0 ])
+            , test "at intermediate index" <|
+                \_ ->
+                    replaceAt 1 0 [ 1, 2, 3 ]
+                        |> Expect.equal (Just [ 1, 0, 3 ])
+            , test "at out of bounds index (too low)" <|
+                \_ ->
+                    replaceAt -1 0 [ 1, 2, 3 ]
+                        |> Expect.equal Nothing
+            , test "at out of bounds index (too high)" <|
+                \_ ->
+                    replaceAt 3 0 [ 1, 2, 3 ]
+                        |> Expect.equal Nothing
+            ]
+        , describe "attemptMove"
+            [ test "using tiles not in the player's hand" <|
+                \_ ->
+                    let
+                        current =
+                            { unflipped = []
+                            , board = []
+                            , playerHands = [ [ ( Red, Two ), ( Red, Three ) ] ]
+                            , playerTurn = 0
+                            }
+
+                        newBoard =
+                            [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                    in
+                    attemptMove current newBoard
+                        |> Expect.equal (Err "Some played tiles are not in the player's hand")
+            , test "playing some invalid groups" <|
+                \_ ->
+                    let
+                        current =
+                            { unflipped = []
+                            , board = []
+                            , playerHands = [ [ ( Red, Two ), ( Red, Three ) ] ]
+                            , playerTurn = 0
+                            }
+
+                        newBoard =
+                            [ [ ( Red, Two ), ( Red, Three ) ] ]
+                    in
+                    attemptMove current newBoard
+                        |> Expect.equal (Err "Some played groups are not valid")
+            , test "valid move" <|
+                \_ ->
+                    let
+                        current =
+                            { unflipped = []
+                            , board = []
+                            , playerHands =
+                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                                , []
+                                ]
+                            , playerTurn = 0
+                            }
+
+                        newBoard =
+                            [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                    in
+                    attemptMove current newBoard
+                        |> Expect.equal
+                            (Ok
+                                { unflipped = []
+                                , board = newBoard
+                                , playerHands = [ [], [] ]
+                                , playerTurn = 1
+                                }
+                            )
             ]
         ]

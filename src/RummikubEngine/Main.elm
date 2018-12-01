@@ -10,29 +10,56 @@ import Tuple
 
 newGameWithDefaults : Seed -> GameState
 newGameWithDefaults seed =
-    newGame seed defaultNumPlayers
+    case newGame seed defaultNumPlayers of
+        Err msg ->
+            -- TODO ideally impossible state
+            { unflipped = [], playerHands = [], board = [], playerTurn = 0 }
+
+        Ok state ->
+            state
 
 
-newGame : Seed -> Int -> GameState
+newGame : Seed -> Int -> Result String GameState
 newGame seed numPlayers =
-    let
-        ( unflipped, playerHands ) =
-            List.foldl
-                (\_ ( currUnflipped, currPlayerHands ) ->
+    case numPlayers < 1 of
+        True ->
+            Err "Must have a positive number of players"
+
+        False ->
+            let
+                tileDuplicates =
+                    defaultTileDuplicates
+
+                startingPlayerTileCount =
+                    defaultStartingPlayerTileCount
+
+                allTiles =
+                    generateAllTiles tileDuplicates
+            in
+            case (startingPlayerTileCount * numPlayers) > List.length allTiles of
+                True ->
+                    Err "Cannot allocate enough tiles per player"
+
+                False ->
                     let
-                        ( newUnflipped, newPlayerHand ) =
-                            takeTiles seed currUnflipped defaultStartingPlayerTileCount
+                        ( unflipped, playerHands ) =
+                            List.foldl
+                                (\_ ( currUnflipped, currPlayerHands ) ->
+                                    let
+                                        ( newUnflipped, newPlayerHand ) =
+                                            takeTiles seed currUnflipped defaultStartingPlayerTileCount
+                                    in
+                                    ( newUnflipped, newPlayerHand :: currPlayerHands )
+                                )
+                                ( generateAllTiles defaultTileDuplicates, [] )
+                                (List.range 0 (numPlayers - 1))
                     in
-                    ( newUnflipped, newPlayerHand :: currPlayerHands )
-                )
-                ( allTiles defaultTileDuplicates, [] )
-                (List.range 0 (numPlayers - 1))
-    in
-    { unflipped = unflipped
-    , playerHands = playerHands
-    , board = []
-    , playerTurn = 0
-    }
+                    Ok
+                        { unflipped = unflipped
+                        , playerHands = playerHands
+                        , board = []
+                        , playerTurn = 0
+                        }
 
 
 attemptMove : GameState -> Board -> Result String GameState

@@ -14,6 +14,10 @@ import Test exposing (..)
 -- Check out http://package.elm-lang.org/packages/elm-community/elm-test/latest to learn more about testing in Elm!
 
 
+defaultInitialSeed =
+    Random.initialSeed 10
+
+
 newGameInst seeder =
     newGame (Random.initialSeed seeder) 4
 
@@ -24,46 +28,62 @@ expectStartingPlayerTileCount playerIndex inst =
 
 
 defaultTotalNumTiles =
-    List.length (allTiles defaultTileDuplicates)
+    List.length (generateAllTiles defaultTileDuplicates)
 
 
-newGameWithNumPlayers : Int -> Int -> GameState
+type alias GameGenerator =
+    Int -> Result String GameState
+
+
+newGameWithNumPlayers : Int -> Int -> Result String GameState
 newGameWithNumPlayers numPlayers seeder =
     newGame (Random.initialSeed seeder) numPlayers
 
 
-testNumberOfPlayerHandsIsCorrect : Int -> (Int -> GameState) -> Test
-testNumberOfPlayerHandsIsCorrect expectedNumPlayerHands getNewGame =
-    fuzz int "number of player hands is correct" <|
+newGameTest : String -> GameGenerator -> (GameState -> Expectation) -> Test
+newGameTest testMsg getNewGame expectFromGameState =
+    fuzz int testMsg <|
         \seeder ->
-            getNewGame seeder
+            case getNewGame seeder of
+                Err msg ->
+                    Expect.fail msg
+
+                Ok gameState ->
+                    expectFromGameState gameState
+
+
+testNumberOfPlayerHandsIsCorrect : Int -> GameGenerator -> Test
+testNumberOfPlayerHandsIsCorrect expectedNumPlayerHands getNewGame =
+    newGameTest "number of player hands is correct" getNewGame <|
+        \state ->
+            state
                 |> numPlayers
                 |> Expect.equal expectedNumPlayerHands
 
 
-testAllPlayersHaveCorrectNumberOfTiles : (Int -> GameState) -> Test
+testAllPlayersHaveCorrectNumberOfTiles : GameGenerator -> Test
 testAllPlayersHaveCorrectNumberOfTiles getNewGame =
-    fuzz int "all players have the correct number of tiles" <|
-        \seeder ->
-            (getNewGame seeder).playerHands
+    newGameTest "all players have the correct number of tiles" getNewGame <|
+        \state ->
+            state.playerHands
                 |> List.all (\hand -> List.length hand == defaultStartingPlayerTileCount)
                 |> Expect.equal True
 
 
-testCorrectTotalNumberOfTilesInGame : (Int -> GameState) -> Test
+testCorrectTotalNumberOfTilesInGame : GameGenerator -> Test
 testCorrectTotalNumberOfTilesInGame getNewGame =
-    fuzz int "total number of tiles in the game is correct" <|
-        \seeder ->
-            getNewGame seeder
+    newGameTest "total number of tiles in the game is correct" getNewGame <|
+        \state ->
+            state
                 |> getAllTilesCount
                 |> Expect.equal defaultTotalNumTiles
 
 
-testNoPlayedTiles : (Int -> GameState) -> Test
+testNoPlayedTiles : GameGenerator -> Test
 testNoPlayedTiles getNewGame =
-    fuzz int "there are no played tiles" <|
-        \seeder ->
-            (getNewGame seeder).board
+    newGameTest "there are no played tiles" getNewGame <|
+        \state ->
+            state.board
                 |> List.length
                 |> Expect.equal 0
 
@@ -111,6 +131,18 @@ all =
                 newGameTestSuite 5
             , describe "with 6 players" <|
                 newGameTestSuite 6
+            , test "with 0 players results in error" <|
+                \_ ->
+                    newGame defaultInitialSeed 0
+                        |> Expect.equal (Err "Must have a positive number of players")
+            , test "with -1 players results in error" <|
+                \_ ->
+                    newGame defaultInitialSeed -1
+                        |> Expect.equal (Err "Must have a positive number of players")
+            , test "too many players results in error" <|
+                \_ ->
+                    newGame defaultInitialSeed 20
+                        |> Expect.equal (Err "Cannot allocate enough tiles per player")
             ]
         , describe "attemptMove"
             [ test "using tiles not in the player's hand" <|

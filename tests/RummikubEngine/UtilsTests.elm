@@ -25,15 +25,15 @@ all =
                                 * List.length numbers
                             )
             ]
-        , describe "allTiles"
+        , describe "generateAllTiles"
             [ test "has correct size with no duplication" <|
                 \_ ->
-                    allTiles 1
+                    generateAllTiles 1
                         |> List.length
                         |> Expect.equal (List.length allUniqueTiles)
             , test "has correct size with 2 duplicates per" <|
                 \_ ->
-                    allTiles 2
+                    generateAllTiles 2
                         |> List.length
                         |> Expect.equal
                             (List.length allUniqueTiles
@@ -41,7 +41,7 @@ all =
                             )
             , test "has correct size with 3 duplicates per" <|
                 \_ ->
-                    allTiles 3
+                    generateAllTiles 3
                         |> List.length
                         |> Expect.equal
                             (List.length allUniqueTiles

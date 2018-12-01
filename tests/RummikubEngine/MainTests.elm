@@ -1,9 +1,9 @@
-module RummikubEngine.MainTests exposing (all, expectStartingPlayerTileCount, newGameInst, totalNumTiles)
+module RummikubEngine.MainTests exposing (all)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (..)
 import List.Extra exposing (getAt)
-import Random
+import Random exposing (Seed)
 import RummikubEngine.Main exposing (..)
 import RummikubEngine.Models exposing (..)
 import RummikubEngine.Utils exposing (..)
@@ -15,42 +15,103 @@ import Test exposing (..)
 
 
 newGameInst seeder =
-    newGame (Random.initialSeed seeder)
+    newGame (Random.initialSeed seeder) 4
 
 
 expectStartingPlayerTileCount : Int -> GameState -> Expectation
 expectStartingPlayerTileCount playerIndex inst =
-    Expect.equal (Maybe.map List.length (getAt playerIndex inst.playerHands)) (Just startingPlayerTileCount)
+    Expect.equal (Maybe.map List.length (getAt playerIndex inst.playerHands)) (Just defaultStartingPlayerTileCount)
 
 
-totalNumTiles =
-    List.length allTiles
+defaultTotalNumTiles =
+    List.length (allTiles defaultTileDuplicates)
+
+
+newGameWithNumPlayers : Int -> Int -> GameState
+newGameWithNumPlayers numPlayers seeder =
+    newGame (Random.initialSeed seeder) numPlayers
+
+
+testNumberOfPlayerHandsIsCorrect : Int -> (Int -> GameState) -> Test
+testNumberOfPlayerHandsIsCorrect expectedNumPlayerHands getNewGame =
+    fuzz int "number of player hands is correct" <|
+        \seeder ->
+            getNewGame seeder
+                |> numPlayers
+                |> Expect.equal expectedNumPlayerHands
+
+
+testAllPlayersHaveCorrectNumberOfTiles : (Int -> GameState) -> Test
+testAllPlayersHaveCorrectNumberOfTiles getNewGame =
+    fuzz int "all players have the correct number of tiles" <|
+        \seeder ->
+            (getNewGame seeder).playerHands
+                |> List.all (\hand -> List.length hand == defaultStartingPlayerTileCount)
+                |> Expect.equal True
+
+
+testCorrectTotalNumberOfTilesInGame : (Int -> GameState) -> Test
+testCorrectTotalNumberOfTilesInGame getNewGame =
+    fuzz int "total number of tiles in the game is correct" <|
+        \seeder ->
+            getNewGame seeder
+                |> getAllTilesCount
+                |> Expect.equal defaultTotalNumTiles
+
+
+testNoPlayedTiles : (Int -> GameState) -> Test
+testNoPlayedTiles getNewGame =
+    fuzz int "there are no played tiles" <|
+        \seeder ->
+            (getNewGame seeder).board
+                |> List.length
+                |> Expect.equal 0
+
+
+getAllTiles : GameState -> List Tile
+getAllTiles gameState =
+    [ gameState.board
+    , gameState.playerHands
+    ]
+        |> List.concat
+        |> List.concatMap (\a -> a)
+        |> List.append gameState.unflipped
+
+
+getAllTilesCount : GameState -> Int
+getAllTilesCount gameState =
+    getAllTiles gameState
+        |> List.length
+
+
+newGameTestSuite : Int -> List Test
+newGameTestSuite numPlayers =
+    List.map
+        (\test -> test (newGameWithNumPlayers numPlayers))
+        [ testNumberOfPlayerHandsIsCorrect numPlayers
+        , testAllPlayersHaveCorrectNumberOfTiles
+        , testCorrectTotalNumberOfTilesInGame
+        , testNoPlayedTiles
+        ]
 
 
 all : Test
 all =
-    describe "Game"
-        [ test "starting number of tiles" <|
-            \_ ->
-                Expect.equal totalNumTiles (List.length colors * List.length numbers * tileDuplicates)
-        , fuzz int "new game unflipped num" <|
-            \seeder ->
-                Expect.equal (List.length (newGameInst seeder).unflipped) (totalNumTiles - startingPlayerTileCount * defaultNumPlayers)
-        , fuzz int "new game player num" <|
-            \seeder ->
-                Expect.equal (List.length (newGameInst seeder).playerHands) defaultNumPlayers
-        , fuzz int "new game playerhand num tiles" <|
-            \seeder ->
-                Expect.all
-                    [ expectStartingPlayerTileCount 0
-                    , expectStartingPlayerTileCount 1
-                    , expectStartingPlayerTileCount 2
-                    , expectStartingPlayerTileCount 3
-                    ]
-                    (newGameInst seeder)
-        , fuzz int "new game has 0 board tiles" <|
-            \seeder ->
-                Expect.equal (List.length (newGameInst seeder).board) 0
+    describe "RummikubEngine.Main"
+        [ describe "newGame"
+            [ describe "with 1 player" <|
+                newGameTestSuite 1
+            , describe "with 2 players" <|
+                newGameTestSuite 2
+            , describe "with 3 players" <|
+                newGameTestSuite 3
+            , describe "with 4 players" <|
+                newGameTestSuite 4
+            , describe "with 5 players" <|
+                newGameTestSuite 5
+            , describe "with 6 players" <|
+                newGameTestSuite 6
+            ]
         , describe "attemptMove"
             [ test "using tiles not in the player's hand" <|
                 \_ ->

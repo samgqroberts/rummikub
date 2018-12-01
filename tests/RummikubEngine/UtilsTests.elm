@@ -16,7 +16,39 @@ import Test exposing (..)
 all : Test
 all =
     describe "Game.Utils"
-        [ describe "allColorsTheSame"
+        [ describe "allUniqueTiles"
+            [ test "has correct size" <|
+                \_ ->
+                    List.length allUniqueTiles
+                        |> Expect.equal
+                            (List.length colors
+                                * List.length numbers
+                            )
+            ]
+        , describe "allTiles"
+            [ test "has correct size with no duplication" <|
+                \_ ->
+                    allTiles 1
+                        |> List.length
+                        |> Expect.equal (List.length allUniqueTiles)
+            , test "has correct size with 2 duplicates per" <|
+                \_ ->
+                    allTiles 2
+                        |> List.length
+                        |> Expect.equal
+                            (List.length allUniqueTiles
+                                * 2
+                            )
+            , test "has correct size with 3 duplicates per" <|
+                \_ ->
+                    allTiles 3
+                        |> List.length
+                        |> Expect.equal
+                            (List.length allUniqueTiles
+                                * 3
+                            )
+            ]
+        , describe "allColorsTheSame"
             [ test "1 of the same color" <|
                 \_ ->
                     allColorsTheSame [ ( Black, One ) ] |> Expect.equal True

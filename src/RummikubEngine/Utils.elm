@@ -1,4 +1,4 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultingToEmptyList, getColor, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numPlayers, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, startingPlayerTileCount, takeRandomTile, takeTiles, tileDuplicates, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultStartingPlayerTileCount, defaultTileDuplicates, defaultingToEmptyList, getColor, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numPlayers, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
@@ -30,7 +30,7 @@ numbers =
 
 {-| how many (Black, One) tiles are there?
 -}
-tileDuplicates =
+defaultTileDuplicates =
     2
 
 
@@ -38,7 +38,7 @@ defaultNumPlayers =
     4
 
 
-startingPlayerTileCount =
+defaultStartingPlayerTileCount =
     14
 
 
@@ -213,11 +213,15 @@ createTilesForColor color =
         |> List.map (\number -> ( color, number ))
 
 
-allTiles : List Tile
-allTiles =
+allTiles : Int -> List Tile
+allTiles tileDuplicates =
+    allUniqueTiles
+        |> List.concatMap (\uniqueTile -> List.repeat tileDuplicates uniqueTile)
+
+
+allUniqueTiles : List Tile
+allUniqueTiles =
     colors
-        |> List.map (\color -> [ color, color ])
-        |> List.concat
         |> List.map createTilesForColor
         |> List.concat
 

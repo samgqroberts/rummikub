@@ -8,23 +8,23 @@ import RummikubEngine.Utils exposing (..)
 import Tuple
 
 
-newGame : Seed -> GameState
-newGame seed =
+newGame : Seed -> Int -> GameState
+newGame seed numPlayers =
     let
-        ( unflipped1, playerHand1 ) =
-            takeTiles seed allTiles startingPlayerTileCount
-
-        ( unflipped2, playerHand2 ) =
-            takeTiles seed unflipped1 startingPlayerTileCount
-
-        ( unflipped3, playerHand3 ) =
-            takeTiles seed unflipped2 startingPlayerTileCount
-
-        ( unflipped, playerHand4 ) =
-            takeTiles seed unflipped3 startingPlayerTileCount
+        ( unflipped, playerHands ) =
+            List.foldl
+                (\_ ( currUnflipped, currPlayerHands ) ->
+                    let
+                        ( newUnflipped, newPlayerHand ) =
+                            takeTiles seed currUnflipped defaultStartingPlayerTileCount
+                    in
+                    ( newUnflipped, newPlayerHand :: currPlayerHands )
+                )
+                ( allTiles defaultTileDuplicates, [] )
+                (List.range 0 (numPlayers - 1))
     in
     { unflipped = unflipped
-    , playerHands = [ playerHand1, playerHand2, playerHand3, playerHand4 ]
+    , playerHands = playerHands
     , board = []
     , playerTurn = 0
     }

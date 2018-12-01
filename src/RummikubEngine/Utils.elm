@@ -1,4 +1,4 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultStartingPlayerTileCount, defaultTileDuplicates, defaultingToEmptyList, generateAllTiles, getColor, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numPlayers, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultStartingPlayerTileCount, defaultTileDuplicates, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
@@ -382,11 +382,11 @@ defaultingToEmptyList aListMaybe =
     Maybe.withDefault [] aListMaybe
 
 
-numPlayers : GameState -> Int
-numPlayers gameState =
+getNumPlayers : GameState -> Int
+getNumPlayers gameState =
     List.length gameState.playerHands
 
 
 nextPlayerTurn : GameState -> Int
 nextPlayerTurn gameState =
-    modBy (numPlayers gameState) (gameState.playerTurn + 1)
+    modBy (getNumPlayers gameState) (gameState.playerTurn + 1)

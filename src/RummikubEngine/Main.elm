@@ -3,14 +3,14 @@ module RummikubEngine.Main exposing (attemptMove, newGame, newGameWithDefaults)
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed)
-import RummikubEngine.Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
+import RummikubEngine.Models exposing (..)
 import RummikubEngine.Utils exposing (..)
 import Tuple
 
 
 newGameWithDefaults : Seed -> GameState
 newGameWithDefaults seed =
-    case newGame seed defaultNumPlayers of
+    case newGame seed { numPlayers = defaultNumPlayers, tileDuplicates = defaultTileDuplicates } of
         Err msg ->
             -- TODO ideally impossible state
             { unflipped = [], playerHands = [], board = [], playerTurn = 0 }
@@ -19,47 +19,49 @@ newGameWithDefaults seed =
             state
 
 
-newGame : Seed -> Int -> Result String GameState
-newGame seed numPlayers =
+newGame : Seed -> GameConfig -> Result String GameState
+newGame seed { numPlayers, tileDuplicates } =
     case numPlayers < 1 of
         True ->
             Err "Must have a positive number of players"
 
         False ->
-            let
-                tileDuplicates =
-                    defaultTileDuplicates
-
-                startingPlayerTileCount =
-                    defaultStartingPlayerTileCount
-
-                allTiles =
-                    generateAllTiles tileDuplicates
-            in
-            case (startingPlayerTileCount * numPlayers) > List.length allTiles of
+            case tileDuplicates < 1 of
                 True ->
-                    Err "Cannot allocate enough tiles per player"
+                    Err "Must have a positive number of tile duplicates"
 
                 False ->
                     let
-                        ( unflipped, playerHands ) =
-                            List.foldl
-                                (\_ ( currUnflipped, currPlayerHands ) ->
-                                    let
-                                        ( newUnflipped, newPlayerHand ) =
-                                            takeTiles seed currUnflipped defaultStartingPlayerTileCount
-                                    in
-                                    ( newUnflipped, newPlayerHand :: currPlayerHands )
-                                )
-                                ( generateAllTiles defaultTileDuplicates, [] )
-                                (List.range 0 (numPlayers - 1))
+                        startingPlayerTileCount =
+                            defaultStartingPlayerTileCount
+
+                        allTiles =
+                            generateAllTiles tileDuplicates
                     in
-                    Ok
-                        { unflipped = unflipped
-                        , playerHands = playerHands
-                        , board = []
-                        , playerTurn = 0
-                        }
+                    case (startingPlayerTileCount * numPlayers) > List.length allTiles of
+                        True ->
+                            Err "Cannot allocate enough tiles per player"
+
+                        False ->
+                            let
+                                ( unflipped, playerHands ) =
+                                    List.foldl
+                                        (\_ ( currUnflipped, currPlayerHands ) ->
+                                            let
+                                                ( newUnflipped, newPlayerHand ) =
+                                                    takeTiles seed currUnflipped defaultStartingPlayerTileCount
+                                            in
+                                            ( newUnflipped, newPlayerHand :: currPlayerHands )
+                                        )
+                                        ( generateAllTiles tileDuplicates, [] )
+                                        (List.range 0 (numPlayers - 1))
+                            in
+                            Ok
+                                { unflipped = unflipped
+                                , playerHands = playerHands
+                                , board = []
+                                , playerTurn = 0
+                                }
 
 
 attemptMove : GameState -> Board -> Result String GameState

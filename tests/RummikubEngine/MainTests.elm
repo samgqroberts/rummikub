@@ -18,15 +18,6 @@ defaultInitialSeed =
     Random.initialSeed 10
 
 
-newGameInst seeder =
-    newGame (Random.initialSeed seeder) 4
-
-
-expectStartingPlayerTileCount : Int -> GameState -> Expectation
-expectStartingPlayerTileCount playerIndex inst =
-    Expect.equal (Maybe.map List.length (getAt playerIndex inst.playerHands)) (Just defaultStartingPlayerTileCount)
-
-
 defaultTotalNumTiles =
     List.length (generateAllTiles defaultTileDuplicates)
 
@@ -35,9 +26,14 @@ type alias GameGenerator =
     Int -> Result String GameState
 
 
-newGameWithNumPlayers : Int -> Int -> Result String GameState
-newGameWithNumPlayers numPlayers seeder =
-    newGame (Random.initialSeed seeder) numPlayers
+defaultGameConfigWithNumPlayers : Int -> GameConfig
+defaultGameConfigWithNumPlayers numPlayers =
+    { numPlayers = numPlayers, tileDuplicates = defaultTileDuplicates }
+
+
+newGameGenerator : GameConfig -> Int -> Result String GameState
+newGameGenerator config seeder =
+    newGame (Random.initialSeed seeder) config
 
 
 newGameTest : String -> GameGenerator -> (GameState -> Expectation) -> Test
@@ -52,13 +48,13 @@ newGameTest testMsg getNewGame expectFromGameState =
                     expectFromGameState gameState
 
 
-testNumberOfPlayerHandsIsCorrect : Int -> GameGenerator -> Test
-testNumberOfPlayerHandsIsCorrect expectedNumPlayerHands getNewGame =
+testNumberOfPlayerHandsIsCorrect : GameConfig -> GameGenerator -> Test
+testNumberOfPlayerHandsIsCorrect { numPlayers } getNewGame =
     newGameTest "number of player hands is correct" getNewGame <|
         \state ->
             state
-                |> numPlayers
-                |> Expect.equal expectedNumPlayerHands
+                |> getNumPlayers
+                |> Expect.equal numPlayers
 
 
 testAllPlayersHaveCorrectNumberOfTiles : GameGenerator -> Test
@@ -70,13 +66,13 @@ testAllPlayersHaveCorrectNumberOfTiles getNewGame =
                 |> Expect.equal True
 
 
-testCorrectTotalNumberOfTilesInGame : GameGenerator -> Test
-testCorrectTotalNumberOfTilesInGame getNewGame =
+testCorrectTotalNumberOfTilesInGame : GameConfig -> GameGenerator -> Test
+testCorrectTotalNumberOfTilesInGame { tileDuplicates } getNewGame =
     newGameTest "total number of tiles in the game is correct" getNewGame <|
         \state ->
             state
                 |> getAllTilesCount
-                |> Expect.equal defaultTotalNumTiles
+                |> Expect.equal (List.length (generateAllTiles tileDuplicates))
 
 
 testNoPlayedTiles : GameGenerator -> Test
@@ -104,13 +100,13 @@ getAllTilesCount gameState =
         |> List.length
 
 
-newGameTestSuite : Int -> List Test
-newGameTestSuite numPlayers =
+newGameTestSuite : GameConfig -> List Test
+newGameTestSuite config =
     List.map
-        (\test -> test (newGameWithNumPlayers numPlayers))
-        [ testNumberOfPlayerHandsIsCorrect numPlayers
+        (\test -> test (newGameGenerator config))
+        [ testNumberOfPlayerHandsIsCorrect config
         , testAllPlayersHaveCorrectNumberOfTiles
-        , testCorrectTotalNumberOfTilesInGame
+        , testCorrectTotalNumberOfTilesInGame config
         , testNoPlayedTiles
         ]
 
@@ -120,28 +116,38 @@ all =
     describe "RummikubEngine.Main"
         [ describe "newGame"
             [ describe "with 1 player" <|
-                newGameTestSuite 1
+                newGameTestSuite (defaultGameConfigWithNumPlayers 1)
             , describe "with 2 players" <|
-                newGameTestSuite 2
+                newGameTestSuite (defaultGameConfigWithNumPlayers 2)
             , describe "with 3 players" <|
-                newGameTestSuite 3
+                newGameTestSuite (defaultGameConfigWithNumPlayers 3)
             , describe "with 4 players" <|
-                newGameTestSuite 4
+                newGameTestSuite (defaultGameConfigWithNumPlayers 4)
             , describe "with 5 players" <|
-                newGameTestSuite 5
+                newGameTestSuite (defaultGameConfigWithNumPlayers 5)
             , describe "with 6 players" <|
-                newGameTestSuite 6
+                newGameTestSuite (defaultGameConfigWithNumPlayers 6)
+            , describe "with tileDuplicates of 1" <|
+                newGameTestSuite { numPlayers = 2, tileDuplicates = 1 }
+            , describe "with tileDuplicates of 2" <|
+                newGameTestSuite { numPlayers = 2, tileDuplicates = 2 }
+            , describe "with tileDuplicates of 3" <|
+                newGameTestSuite { numPlayers = 2, tileDuplicates = 3 }
             , test "with 0 players results in error" <|
                 \_ ->
-                    newGame defaultInitialSeed 0
+                    newGame defaultInitialSeed (defaultGameConfigWithNumPlayers 0)
                         |> Expect.equal (Err "Must have a positive number of players")
             , test "with -1 players results in error" <|
                 \_ ->
-                    newGame defaultInitialSeed -1
+                    newGame defaultInitialSeed (defaultGameConfigWithNumPlayers -1)
                         |> Expect.equal (Err "Must have a positive number of players")
-            , test "too many players results in error" <|
+            , test "with 0 tile duplicates results in error" <|
                 \_ ->
-                    newGame defaultInitialSeed 20
+                    newGame defaultInitialSeed { numPlayers = 2, tileDuplicates = 0 }
+                        |> Expect.equal (Err "Must have a positive number of tile duplicates")
+            , test "too many players vs. tiles results in error" <|
+                \_ ->
+                    newGame defaultInitialSeed (defaultGameConfigWithNumPlayers 20)
                         |> Expect.equal (Err "Cannot allocate enough tiles per player")
             ]
         , describe "attemptMove"

@@ -29,12 +29,12 @@ numbers =
     ]
 
 
+{-| how many (Black, One) tiles are there?
+-}
 tileDuplicates =
     2
 
 
-{-| how many (Black, One) tiles are there?
--}
 defaultNumPlayers =
     4
 

@@ -1,10 +1,9 @@
-module Game exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, attemptMove, colors, containsAll, createTilesForColor, defaultNumPlayers, isValidBoard, isValidGroup, listDiff, moveTile, newGame, numbers, replaceAt, startingPlayerTileCount, takeRandomTile, takeTiles, tileDuplicates)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultingToEmptyList, getColor, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numPlayers, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, startingPlayerTileCount, takeRandomTile, takeTiles, tileDuplicates, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
-import ModelUtils exposing (..)
-import Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
 import Random exposing (Seed)
+import RummikubEngine.Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
 import Tuple
 
 
@@ -39,6 +38,175 @@ defaultNumPlayers =
     4
 
 
+startingPlayerTileCount =
+    14
+
+
+getColor : Tile -> Color
+getColor tile =
+    Tuple.first tile
+
+
+getNumber : Tile -> Number
+getNumber tile =
+    Tuple.second tile
+
+
+createTile : Color -> Number -> Tile
+createTile color number =
+    ( color, number )
+
+
+colorToInt : Color -> Int
+colorToInt color =
+    case color of
+        Black ->
+            0
+
+        Red ->
+            1
+
+        Orange ->
+            2
+
+        Blue ->
+            3
+
+
+numberToInt : Number -> Int
+numberToInt number =
+    case number of
+        One ->
+            1
+
+        Two ->
+            2
+
+        Three ->
+            3
+
+        Four ->
+            4
+
+        Five ->
+            5
+
+        Six ->
+            6
+
+        Seven ->
+            7
+
+        Eight ->
+            8
+
+        Nine ->
+            9
+
+        Ten ->
+            10
+
+        Eleven ->
+            11
+
+        Twelve ->
+            12
+
+        Thirteen ->
+            13
+
+
+colorToString : Color -> String
+colorToString color =
+    case color of
+        Black ->
+            "Black"
+
+        Red ->
+            "Red"
+
+        Orange ->
+            "Orange"
+
+        Blue ->
+            "Blue"
+
+
+numberToString : Number -> String
+numberToString number =
+    case number of
+        One ->
+            "One"
+
+        Two ->
+            "Two"
+
+        Three ->
+            "Three"
+
+        Four ->
+            "Four"
+
+        Five ->
+            "Five"
+
+        Six ->
+            "Six"
+
+        Seven ->
+            "Seven"
+
+        Eight ->
+            "Eight"
+
+        Nine ->
+            "Nine"
+
+        Ten ->
+            "Ten"
+
+        Eleven ->
+            "Eleven"
+
+        Twelve ->
+            "Twelve"
+
+        Thirteen ->
+            "Thirteen"
+
+
+tileListToString : List Tile -> String
+tileListToString tileList =
+    "[" ++ String.join ", " (List.map tileToString tileList) ++ "]"
+
+
+groupToString : Group -> String
+groupToString group =
+    tileListToString group
+
+
+tileToString : Tile -> String
+tileToString tile =
+    let
+        colorString =
+            colorToString (getColor tile)
+
+        numberString =
+            numberToString (getNumber tile)
+    in
+    "(" ++ colorString ++ ", " ++ numberString ++ ")"
+
+
+boardToString : Board -> String
+boardToString board =
+    "[" ++ String.join ", " (List.map groupToString board) ++ "]"
+
+
+playerHandToString : PlayerHand -> String
+playerHandToString playerHand =
+    tileListToString playerHand
+
+
 createTilesForColor : Color -> List Tile
 createTilesForColor color =
     numbers
@@ -52,10 +220,6 @@ allTiles =
         |> List.concat
         |> List.map createTilesForColor
         |> List.concat
-
-
-startingPlayerTileCount =
-    14
 
 
 takeRandomTile : Seed -> List Tile -> ( List Tile, Tile )
@@ -90,28 +254,6 @@ takeTiles : Seed -> List Tile -> Int -> ( List Tile, List Tile )
 takeTiles seed tiles numTiles =
     List.range 1 numTiles
         |> List.foldl (\_ tilesTuple -> moveTile seed tilesTuple) ( tiles, [] )
-
-
-newGame : Seed -> GameState
-newGame seed =
-    let
-        ( unflipped1, playerHand1 ) =
-            takeTiles seed allTiles startingPlayerTileCount
-
-        ( unflipped2, playerHand2 ) =
-            takeTiles seed unflipped1 startingPlayerTileCount
-
-        ( unflipped3, playerHand3 ) =
-            takeTiles seed unflipped2 startingPlayerTileCount
-
-        ( unflipped, playerHand4 ) =
-            takeTiles seed unflipped3 startingPlayerTileCount
-    in
-    { unflipped = unflipped
-    , playerHands = [ playerHand1, playerHand2, playerHand3, playerHand4 ]
-    , board = []
-    , playerTurn = 0
-    }
 
 
 allColorsUnique : Group -> Bool
@@ -244,45 +386,3 @@ numPlayers gameState =
 nextPlayerTurn : GameState -> Int
 nextPlayerTurn gameState =
     modBy (numPlayers gameState) (gameState.playerTurn + 1)
-
-
-attemptMove : GameState -> Board -> Result String GameState
-attemptMove current newBoard =
-    let
-        currentPlayerHand =
-            defaultingToEmptyList (getAt current.playerTurn current.playerHands)
-
-        newBoardTiles =
-            List.concatMap (\a -> a) newBoard
-
-        currentBoardTiles =
-            List.concatMap (\a -> a) current.board
-
-        ( playedTiles, _ ) =
-            listDiff newBoardTiles currentBoardTiles
-    in
-    case containsAll currentPlayerHand playedTiles of
-        False ->
-            Err "Some played tiles are not in the player's hand"
-
-        True ->
-            case isValidBoard newBoard of
-                False ->
-                    Err "Some played groups are not valid"
-
-                True ->
-                    let
-                        ( newCurrentPlayerHand, _ ) =
-                            listDiff currentPlayerHand playedTiles
-
-                        newPlayerHands =
-                            replaceAt current.playerTurn newCurrentPlayerHand current.playerHands
-                                -- TODO impossible state
-                                |> Maybe.withDefault current.playerHands
-                    in
-                    Ok
-                        { current
-                            | board = newBoard
-                            , playerHands = newPlayerHands
-                            , playerTurn = nextPlayerTurn current
-                        }

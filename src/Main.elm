@@ -1,21 +1,17 @@
-module Main exposing (Model, Msg(..), init, initialState, main, playerIndexToName, update, view, viewBoard, viewPlayerHand, viewPlayerHands, viewUnflipped)
+module Main exposing (Msg(..), init, initialState, main, playerIndexToName, update, view, viewBoard, viewPlayerHand, viewPlayerHands, viewUnflipped)
 
 import Browser
-import Game exposing (newGame)
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
-import ModelUtils exposing (..)
-import Models exposing (Board, GameState, Group, PlayerHand, PlayerHands, Unflipped)
+import Models exposing (Model)
 import Random
+import RummikubEngine.Main exposing (..)
+import RummikubEngine.Models exposing (..)
+import RummikubEngine.Utils exposing (..)
 
 
 
 ---- MODEL ----
-
-
-type alias Model =
-    { gameState : GameState
-    }
 
 
 initialState =

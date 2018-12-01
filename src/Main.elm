@@ -15,7 +15,7 @@ import RummikubEngine.Utils exposing (..)
 
 
 initialState =
-    { gameState = newGame (Random.initialSeed 10) 4 -- TODO randomize seed
+    { gameState = newGameWithDefaults (Random.initialSeed 10) -- TODO randomize seed
     }
 
 

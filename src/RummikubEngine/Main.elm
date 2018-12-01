@@ -1,4 +1,4 @@
-module RummikubEngine.Main exposing (attemptMove, newGame)
+module RummikubEngine.Main exposing (attemptMove, newGame, newGameWithDefaults)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
@@ -6,6 +6,11 @@ import Random exposing (Seed)
 import RummikubEngine.Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
 import RummikubEngine.Utils exposing (..)
 import Tuple
+
+
+newGameWithDefaults : Seed -> GameState
+newGameWithDefaults seed =
+    newGame seed defaultNumPlayers
 
 
 newGame : Seed -> Int -> GameState

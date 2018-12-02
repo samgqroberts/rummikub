@@ -1,4 +1,4 @@
-module RummikubEngine.Main exposing (attemptMove, newGame, newGameWithDefaults)
+module RummikubEngine.Main exposing (attemptMove, newGame, newGameWithDefaults, playerHasWon)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
@@ -17,6 +17,15 @@ newGameWithDefaults seed =
 
         Ok state ->
             state
+
+
+playerHasWon : GameState -> Maybe Int
+playerHasWon gameState =
+    gameState
+        |> getPlayerStates
+        |> List.indexedMap Tuple.pair
+        |> List.Extra.find (\( _, playerState ) -> List.isEmpty (getHand playerState))
+        |> Maybe.map Tuple.first
 
 
 newGame : Seed -> GameConfig -> Result String GameState

@@ -358,5 +358,27 @@ all =
                                     }
                                 )
                 ]
+            , describe "playerHasWon"
+                [ test "with one winning player" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates = [ hasPlayed [], hasPlayed [ ( Red, Two ) ] ]
+                                }
+                        in
+                        playerHasWon current
+                            |> Expect.equal (Just 0)
+                , test "with no winning players" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates = [ hasPlayed [ ( Blue, Thirteen ) ], hasPlayed [ ( Red, Two ) ] ]
+                                }
+                        in
+                        playerHasWon current
+                            |> Expect.equal Nothing
+                ]
             ]
         ]

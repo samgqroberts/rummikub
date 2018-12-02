@@ -48,7 +48,7 @@ view model =
         , div []
             [ viewUnflipped model.gameState.unflipped
             , viewBoard model.gameState.board
-            , viewPlayerHands model.gameState.playerHands
+            , viewPlayerHands (getPlayerHands model.gameState)
             ]
         ]
 

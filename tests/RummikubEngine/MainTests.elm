@@ -56,7 +56,7 @@ testAllPlayersHaveCorrectNumberOfTiles : GameConfig -> GameGenerator -> Test
 testAllPlayersHaveCorrectNumberOfTiles { startingPlayerTileCount } getNewGame =
     newGameTest "all players have the correct number of tiles" getNewGame <|
         \state ->
-            state.playerHands
+            getPlayerHands state
                 |> List.all (\hand -> List.length hand == startingPlayerTileCount)
                 |> Expect.equal True
 
@@ -79,10 +79,21 @@ testNoPlayedTiles getNewGame =
                 |> Expect.equal 0
 
 
+testNoPlayerHasPlayed : GameGenerator -> Test
+testNoPlayerHasPlayed getNewGame =
+    newGameTest "no player has played" getNewGame <|
+        \state ->
+            state
+                |> getPlayerStates
+                |> List.map .hasPlayed
+                |> List.all (\a -> a == False)
+                |> Expect.equal True
+
+
 getAllTiles : GameState -> List Tile
 getAllTiles gameState =
     [ gameState.board
-    , gameState.playerHands
+    , getPlayerHands gameState
     ]
         |> List.concat
         |> List.concatMap (\a -> a)
@@ -103,7 +114,18 @@ newGameTestSuite config =
         , testAllPlayersHaveCorrectNumberOfTiles config
         , testCorrectTotalNumberOfTilesInGame config
         , testNoPlayedTiles
+        , testNoPlayerHasPlayed
         ]
+
+
+neverPlayed : PlayerHand -> PlayerState
+neverPlayed playerHand =
+    { hand = playerHand, hasPlayed = False }
+
+
+hasPlayed : PlayerHand -> PlayerState
+hasPlayed playerHand =
+    { hand = playerHand, hasPlayed = True }
 
 
 all : Test
@@ -169,7 +191,7 @@ all =
                             current =
                                 { unflipped = [ ( Red, Four ), ( Blue, Nine ) ]
                                 , board = []
-                                , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                 , playerTurn = 0
                                 }
                         in
@@ -178,7 +200,7 @@ all =
                                 (Ok
                                     { unflipped = [ ( Blue, Nine ) ]
                                     , board = []
-                                    , playerHands = [ [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], [] ]
+                                    , playerStates = [ neverPlayed [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                     , playerTurn = 1
                                     }
                                 )
@@ -188,7 +210,7 @@ all =
                             current =
                                 { unflipped = []
                                 , board = []
-                                , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                 , playerTurn = 0
                                 }
                         in
@@ -197,7 +219,7 @@ all =
                                 (Ok
                                     { unflipped = []
                                     , board = []
-                                    , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                    , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                     , playerTurn = 1
                                     }
                                 )
@@ -208,7 +230,7 @@ all =
                         current =
                             { unflipped = []
                             , board = []
-                            , playerHands = [ [ ( Red, Two ), ( Red, Three ) ] ]
+                            , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ] ]
                             , playerTurn = 0
                             }
 
@@ -223,7 +245,7 @@ all =
                         current =
                             { unflipped = []
                             , board = []
-                            , playerHands = [ [ ( Red, Two ), ( Red, Three ) ] ]
+                            , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ] ]
                             , playerTurn = 0
                             }
 
@@ -238,9 +260,9 @@ all =
                         current =
                             { unflipped = []
                             , board = []
-                            , playerHands =
-                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
-                                , []
+                            , playerStates =
+                                [ neverPlayed [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                                , neverPlayed []
                                 ]
                             , playerTurn = 0
                             }
@@ -253,7 +275,7 @@ all =
                             (Ok
                                 { unflipped = []
                                 , board = newBoard
-                                , playerHands = [ [], [] ]
+                                , playerStates = [ hasPlayed [], neverPlayed [] ]
                                 , playerTurn = 1
                                 }
                             )

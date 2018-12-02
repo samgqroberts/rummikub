@@ -1,10 +1,31 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getHand, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
+
+
+getPlayerStates : GameState -> PlayerStates
+getPlayerStates gameState =
+    gameState.playerStates
+
+
+getPlayerHands : GameState -> PlayerHands
+getPlayerHands gameState =
+    gameState.playerStates
+        |> List.map .hand
+
+
+getPlayerTurn : GameState -> Int
+getPlayerTurn gameState =
+    gameState.playerTurn
+
+
+getHand : PlayerState -> PlayerHand
+getHand playerState =
+    playerState.hand
 
 
 colors =
@@ -362,7 +383,7 @@ defaultingToEmptyList aListMaybe =
 
 getNumPlayers : GameState -> Int
 getNumPlayers gameState =
-    List.length gameState.playerHands
+    List.length (getPlayerStates gameState)
 
 
 nextPlayerTurn : GameState -> Int

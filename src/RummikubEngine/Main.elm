@@ -13,7 +13,7 @@ newGameWithDefaults seed =
     case newGame seed defaultGameConfig of
         Err msg ->
             -- TODO ideally impossible state
-            { unflipped = [], playerHands = [], board = [], playerTurn = 0 }
+            { unflipped = [], playerStates = [], board = [], playerTurn = 0 }
 
         Ok state ->
             state
@@ -55,15 +55,16 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
                             in
                             Ok
                                 { unflipped = unflipped
-                                , playerHands = playerHands
+                                , playerStates = List.map (\hand -> { hand = hand, hasPlayed = False }) playerHands
                                 , board = []
                                 , playerTurn = 0
                                 }
 
 
-getCurrentPlayerHand : GameState -> PlayerHand
-getCurrentPlayerHand gameState =
-    defaultingToEmptyList (getAt gameState.playerTurn gameState.playerHands)
+getCurrentPlayerState : GameState -> PlayerState
+getCurrentPlayerState gameState =
+    -- TODO impossible state
+    Maybe.withDefault { hand = [], hasPlayed = False } (getAt (getPlayerTurn gameState) (getPlayerStates gameState))
 
 
 attemptMove : GameState -> Move -> Result String GameState
@@ -71,26 +72,33 @@ attemptMove current move =
     case move of
         TakeTile ->
             let
+                currentPlayerState =
+                    getCurrentPlayerState current
+
                 currentPlayerHand =
-                    getCurrentPlayerHand current
+                    getHand currentPlayerState
 
                 ( newUnflipped, newCurrentPlayerHand ) =
                     moveTile ( current.unflipped, currentPlayerHand )
 
-                newPlayerHands =
-                    Maybe.withDefault current.playerHands (replaceAt current.playerTurn newCurrentPlayerHand current.playerHands)
+                -- TODO impossible state
+                newPlayerStates =
+                    Maybe.withDefault (getPlayerStates current) (replaceAt (getPlayerTurn current) { currentPlayerState | hand = newCurrentPlayerHand } (getPlayerStates current))
             in
             Ok
                 { current
-                    | playerHands = newPlayerHands
+                    | playerStates = newPlayerStates
                     , unflipped = newUnflipped
                     , playerTurn = nextPlayerTurn current
                 }
 
         Play newBoard ->
             let
+                currentPlayerState =
+                    getCurrentPlayerState current
+
                 currentPlayerHand =
-                    defaultingToEmptyList (getAt current.playerTurn current.playerHands)
+                    getHand currentPlayerState
 
                 newBoardTiles =
                     List.concatMap (\a -> a) newBoard
@@ -115,14 +123,20 @@ attemptMove current move =
                                 ( newCurrentPlayerHand, _ ) =
                                     listDiff currentPlayerHand playedTiles
 
-                                newPlayerHands =
-                                    replaceAt current.playerTurn newCurrentPlayerHand current.playerHands
+                                newCurrentPlayerState =
+                                    { currentPlayerState
+                                        | hand = newCurrentPlayerHand
+                                        , hasPlayed = True
+                                    }
+
+                                newPlayerStates =
+                                    replaceAt (getPlayerTurn current) newCurrentPlayerState (getPlayerStates current)
                                         -- TODO impossible state
-                                        |> Maybe.withDefault current.playerHands
+                                        |> Maybe.withDefault (getPlayerStates current)
                             in
                             Ok
                                 { current
                                     | board = newBoard
-                                    , playerHands = newPlayerHands
+                                    , playerStates = newPlayerStates
                                     , playerTurn = nextPlayerTurn current
                                 }

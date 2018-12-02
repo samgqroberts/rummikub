@@ -51,6 +51,7 @@ type alias Unflipped =
 type Move
     = Play Board
     | TakeTile
+    | InitialPlay (List Group)
 
 
 type alias GameConfig =

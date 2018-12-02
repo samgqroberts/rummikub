@@ -1,10 +1,16 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getHand, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, getPointValue, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
+
+
+flattenGroups : List Group -> List Tile
+flattenGroups groups =
+    groups
+        |> List.concatMap (\a -> a)
 
 
 getPlayerStates : GameState -> PlayerStates
@@ -26,6 +32,16 @@ getPlayerTurn gameState =
 getHand : PlayerState -> PlayerHand
 getHand playerState =
     playerState.hand
+
+
+getHasPlayed : PlayerState -> Bool
+getHasPlayed playerState =
+    playerState.hasPlayed
+
+
+getBoard : GameState -> Board
+getBoard gameState =
+    gameState.board
 
 
 colors =
@@ -422,3 +438,22 @@ shuffleListHelper seed source result =
             Nothing ->
                 -- TODO impossible state
                 result
+
+
+getTilePointValue : Tile -> Int
+getTilePointValue ( _, number ) =
+    numberToInt number
+
+
+getGroupPointValue : Group -> Int
+getGroupPointValue group =
+    group
+        |> List.map getTilePointValue
+        |> List.sum
+
+
+getPointValue : List Group -> Int
+getPointValue groups =
+    groups
+        |> List.map getGroupPointValue
+        |> List.sum

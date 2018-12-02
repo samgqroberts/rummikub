@@ -128,6 +128,11 @@ hasPlayed playerHand =
     { hand = playerHand, hasPlayed = True }
 
 
+emptyState : GameState
+emptyState =
+    { unflipped = [], board = [], playerStates = [], playerTurn = 0 }
+
+
 all : Test
 all =
     describe "RummikubEngine.Main"
@@ -189,95 +194,169 @@ all =
                     \_ ->
                         let
                             current =
-                                { unflipped = [ ( Red, Four ), ( Blue, Nine ) ]
-                                , board = []
-                                , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
-                                , playerTurn = 0
+                                { emptyState
+                                    | unflipped = [ ( Red, Four ), ( Blue, Nine ) ]
+                                    , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
+                                    , playerTurn = 0
                                 }
                         in
                         attemptMove current TakeTile
                             |> Expect.equal
                                 (Ok
-                                    { unflipped = [ ( Blue, Nine ) ]
-                                    , board = []
-                                    , playerStates = [ neverPlayed [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
-                                    , playerTurn = 1
+                                    { current
+                                        | unflipped = [ ( Blue, Nine ) ]
+                                        , playerStates = [ neverPlayed [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
+                                        , playerTurn = 1
                                     }
                                 )
                 , test "without enough tiles left (pass)" <|
                     \_ ->
                         let
                             current =
-                                { unflipped = []
-                                , board = []
-                                , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
-                                , playerTurn = 0
+                                { emptyState
+                                    | playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
+                                    , playerTurn = 0
                                 }
                         in
                         attemptMove current TakeTile
                             |> Expect.equal
                                 (Ok
-                                    { unflipped = []
-                                    , board = []
-                                    , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
-                                    , playerTurn = 1
+                                    { current
+                                        | playerTurn = 1
                                     }
                                 )
                 ]
-            , test "using tiles not in the player's hand" <|
-                \_ ->
-                    let
-                        current =
-                            { unflipped = []
-                            , board = []
-                            , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ] ]
-                            , playerTurn = 0
-                            }
+            , describe "InitialPlay"
+                [ test "having already made a play" <|
+                    \_ ->
+                        let
+                            groupInPlayerHand =
+                                [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
 
-                        newBoard =
-                            [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
-                    in
-                    attemptMove current (Play newBoard)
-                        |> Expect.equal (Err "Some played tiles are not in the player's hand")
-            , test "playing some invalid groups" <|
-                \_ ->
-                    let
-                        current =
-                            { unflipped = []
-                            , board = []
-                            , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ] ]
-                            , playerTurn = 0
-                            }
-
-                        newBoard =
-                            [ [ ( Red, Two ), ( Red, Three ) ] ]
-                    in
-                    attemptMove current (Play newBoard)
-                        |> Expect.equal (Err "Some played groups are not valid")
-            , test "valid move" <|
-                \_ ->
-                    let
-                        current =
-                            { unflipped = []
-                            , board = []
-                            , playerStates =
-                                [ neverPlayed [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
-                                , neverPlayed []
-                                ]
-                            , playerTurn = 0
-                            }
-
-                        newBoard =
-                            [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
-                    in
-                    attemptMove current (Play newBoard)
-                        |> Expect.equal
-                            (Ok
-                                { unflipped = []
-                                , board = newBoard
-                                , playerStates = [ hasPlayed [], neverPlayed [] ]
-                                , playerTurn = 1
+                            current =
+                                { emptyState
+                                    | playerStates = [ hasPlayed groupInPlayerHand, neverPlayed [] ]
+                                    , playerTurn = 0
                                 }
-                            )
+                        in
+                        attemptMove current (InitialPlay [ groupInPlayerHand ])
+                            |> Expect.equal (Err "Current player has already made an Initial Play")
+                , test "without enough point value" <|
+                    \_ ->
+                        let
+                            groupInPlayerHand =
+                                [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+
+                            current =
+                                { emptyState
+                                    | playerStates = [ neverPlayed groupInPlayerHand, neverPlayed [] ]
+                                    , playerTurn = 0
+                                }
+                        in
+                        attemptMove current (InitialPlay [ groupInPlayerHand ])
+                            |> Expect.equal (Err "Initial Play must have point value of 30 or more")
+                , test "using tiles not in player's hand" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates = [ neverPlayed [ ( Red, Ten ), ( Red, Eleven ) ], neverPlayed [] ]
+                                    , playerTurn = 0
+                                }
+                        in
+                        attemptMove current (InitialPlay [ [ ( Red, Ten ), ( Red, Eleven ), ( Red, Thirteen ) ] ])
+                            |> Expect.equal (Err "Some played tiles are not in the player's hand")
+                , test "valid initial play" <|
+                    \_ ->
+                        let
+                            groupsInPlayerHand =
+                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                                , [ ( Orange, Seven ), ( Black, Seven ), ( Blue, Seven ) ]
+                                ]
+
+                            current =
+                                { emptyState
+                                    | playerStates = [ neverPlayed (flattenGroups groupsInPlayerHand), neverPlayed [] ]
+                                    , playerTurn = 0
+                                }
+                        in
+                        attemptMove current (InitialPlay groupsInPlayerHand)
+                            |> Expect.equal
+                                (Ok
+                                    { current
+                                        | board = groupsInPlayerHand
+                                        , playerStates = [ hasPlayed [], neverPlayed [] ]
+                                        , playerTurn = 1
+                                    }
+                                )
+                ]
+            , describe "Play"
+                [ test "having not first made an Initial Play" <|
+                    \_ ->
+                        let
+                            groupInPlayerHand =
+                                [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+
+                            current =
+                                { emptyState
+                                    | playerStates = [ neverPlayed groupInPlayerHand ]
+                                }
+
+                            newBoard =
+                                [ groupInPlayerHand ]
+                        in
+                        attemptMove current (Play newBoard)
+                            |> Expect.equal (Err "Current player must make an Initial Play first")
+                , test "using tiles not in the player's hand" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates = [ hasPlayed [ ( Red, Two ), ( Red, Three ) ] ]
+                                }
+
+                            newBoard =
+                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                        in
+                        attemptMove current (Play newBoard)
+                            |> Expect.equal (Err "Some played tiles are not in the player's hand")
+                , test "playing some invalid groups" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates = [ hasPlayed [ ( Red, Two ), ( Red, Three ) ] ]
+                                }
+
+                            newBoard =
+                                [ [ ( Red, Two ), ( Red, Three ) ] ]
+                        in
+                        attemptMove current (Play newBoard)
+                            |> Expect.equal (Err "Some played groups are not valid")
+                , test "valid move" <|
+                    \_ ->
+                        let
+                            current =
+                                { emptyState
+                                    | playerStates =
+                                        [ hasPlayed [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                                        , neverPlayed []
+                                        ]
+                                    , playerTurn = 0
+                                }
+
+                            newBoard =
+                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                        in
+                        attemptMove current (Play newBoard)
+                            |> Expect.equal
+                                (Ok
+                                    { current
+                                        | board = newBoard
+                                        , playerStates = [ hasPlayed [], neverPlayed [] ]
+                                        , playerTurn = 1
+                                    }
+                                )
+                ]
             ]
         ]

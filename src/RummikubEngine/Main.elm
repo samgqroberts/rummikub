@@ -67,6 +67,23 @@ getCurrentPlayerState gameState =
     Maybe.withDefault { hand = [], hasPlayed = False } (getAt (getPlayerTurn gameState) (getPlayerStates gameState))
 
 
+getCurrentPlayerHand : GameState -> PlayerHand
+getCurrentPlayerHand gameState =
+    getCurrentPlayerState gameState
+        |> getHand
+
+
+getCurrentPlayerHasPlayed : GameState -> Bool
+getCurrentPlayerHasPlayed gameState =
+    getCurrentPlayerState gameState
+        |> getHasPlayed
+
+
+tilesNotInHandError : Result String GameState
+tilesNotInHandError =
+    Err "Some played tiles are not in the player's hand"
+
+
 attemptMove : GameState -> Move -> Result String GameState
 attemptMove current move =
     case move of
@@ -92,51 +109,98 @@ attemptMove current move =
                     , playerTurn = nextPlayerTurn current
                 }
 
-        Play newBoard ->
-            let
-                currentPlayerState =
-                    getCurrentPlayerState current
+        InitialPlay groups ->
+            case getCurrentPlayerHasPlayed current of
+                True ->
+                    Err "Current player has already made an Initial Play"
 
-                currentPlayerHand =
-                    getHand currentPlayerState
-
-                newBoardTiles =
-                    List.concatMap (\a -> a) newBoard
-
-                currentBoardTiles =
-                    List.concatMap (\a -> a) current.board
-
-                ( playedTiles, _ ) =
-                    listDiff newBoardTiles currentBoardTiles
-            in
-            case containsAll currentPlayerHand playedTiles of
                 False ->
-                    Err "Some played tiles are not in the player's hand"
+                    case getPointValue groups < 30 of
+                        True ->
+                            Err "Initial Play must have point value of 30 or more"
+
+                        False ->
+                            case containsAll (getCurrentPlayerHand current) (flattenGroups groups) of
+                                False ->
+                                    tilesNotInHandError
+
+                                True ->
+                                    let
+                                        currentPlayerTurn =
+                                            getPlayerTurn current
+
+                                        currentPlayerState =
+                                            getCurrentPlayerState current
+
+                                        newCurrentPlayerState =
+                                            { currentPlayerState
+                                                | hasPlayed = True
+                                                , hand = listDiff (getHand currentPlayerState) (flattenGroups groups) |> Tuple.first
+                                            }
+
+                                        newPlayerStates =
+                                            Maybe.withDefault (getPlayerStates current) (replaceAt currentPlayerTurn newCurrentPlayerState (getPlayerStates current))
+
+                                        newBoard =
+                                            List.concat [ groups, getBoard current ]
+                                    in
+                                    Ok
+                                        { current
+                                            | playerTurn = nextPlayerTurn current
+                                            , playerStates = newPlayerStates
+                                            , board = newBoard
+                                        }
+
+        Play newBoard ->
+            case getCurrentPlayerHasPlayed current of
+                False ->
+                    Err "Current player must make an Initial Play first"
 
                 True ->
-                    case isValidBoard newBoard of
+                    let
+                        currentPlayerState =
+                            getCurrentPlayerState current
+
+                        currentPlayerHand =
+                            getHand currentPlayerState
+
+                        newBoardTiles =
+                            List.concatMap (\a -> a) newBoard
+
+                        currentBoardTiles =
+                            List.concatMap (\a -> a) current.board
+
+                        ( playedTiles, _ ) =
+                            listDiff newBoardTiles currentBoardTiles
+                    in
+                    case containsAll currentPlayerHand playedTiles of
                         False ->
-                            Err "Some played groups are not valid"
+                            tilesNotInHandError
 
                         True ->
-                            let
-                                ( newCurrentPlayerHand, _ ) =
-                                    listDiff currentPlayerHand playedTiles
+                            case isValidBoard newBoard of
+                                False ->
+                                    Err "Some played groups are not valid"
 
-                                newCurrentPlayerState =
-                                    { currentPlayerState
-                                        | hand = newCurrentPlayerHand
-                                        , hasPlayed = True
-                                    }
+                                True ->
+                                    let
+                                        ( newCurrentPlayerHand, _ ) =
+                                            listDiff currentPlayerHand playedTiles
 
-                                newPlayerStates =
-                                    replaceAt (getPlayerTurn current) newCurrentPlayerState (getPlayerStates current)
-                                        -- TODO impossible state
-                                        |> Maybe.withDefault (getPlayerStates current)
-                            in
-                            Ok
-                                { current
-                                    | board = newBoard
-                                    , playerStates = newPlayerStates
-                                    , playerTurn = nextPlayerTurn current
-                                }
+                                        newCurrentPlayerState =
+                                            { currentPlayerState
+                                                | hand = newCurrentPlayerHand
+                                                , hasPlayed = True
+                                            }
+
+                                        newPlayerStates =
+                                            replaceAt (getPlayerTurn current) newCurrentPlayerState (getPlayerStates current)
+                                                -- TODO impossible state
+                                                |> Maybe.withDefault (getPlayerStates current)
+                                    in
+                                    Ok
+                                        { current
+                                            | board = newBoard
+                                            , playerStates = newPlayerStates
+                                            , playerTurn = nextPlayerTurn current
+                                        }

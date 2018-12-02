@@ -1,8 +1,8 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
-import Random exposing (Seed)
+import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
 
@@ -220,38 +220,22 @@ allUniqueTiles =
         |> List.concat
 
 
-takeRandomTile : Seed -> List Tile -> ( List Tile, Tile )
-takeRandomTile seed tiles =
-    let
-        numTiles =
-            List.length tiles
-
-        generator =
-            Random.int 0 (numTiles - 1)
-
-        randomIndex =
-            Tuple.first (Random.step generator seed)
-    in
-    ( List.append (List.take randomIndex tiles) (List.drop (randomIndex + 1) tiles)
-    , Maybe.withDefault ( Black, One ) {- TODO bad! -} (getAt randomIndex tiles)
-    )
-
-
-{-| moves a tile from the first list in the tuple to the second list
+{-| moves the first tile from the first list in the tuple to the second list
 -}
-moveTile : Seed -> ( List Tile, List Tile ) -> ( List Tile, List Tile )
-moveTile seed tileLists =
-    let
-        ( newLeft, tileTaken ) =
-            takeRandomTile seed (Tuple.first tileLists)
-    in
-    ( newLeft, tileTaken :: Tuple.second tileLists )
+moveTile : ( List Tile, List Tile ) -> ( List Tile, List Tile )
+moveTile ( source, target ) =
+    case source of
+        [] ->
+            ( source, target )
+
+        firstInSource :: restOfSource ->
+            ( restOfSource, firstInSource :: target )
 
 
-takeTiles : Seed -> List Tile -> Int -> ( List Tile, List Tile )
-takeTiles seed tiles numTiles =
+takeTiles : List Tile -> Int -> ( List Tile, List Tile )
+takeTiles tiles numTiles =
     List.range 1 numTiles
-        |> List.foldl (\_ tilesTuple -> moveTile seed tilesTuple) ( tiles, [] )
+        |> List.foldl (\_ tilesTuple -> moveTile tilesTuple) ( tiles, [] )
 
 
 allColorsUnique : Group -> Bool
@@ -384,3 +368,36 @@ getNumPlayers gameState =
 nextPlayerTurn : GameState -> Int
 nextPlayerTurn gameState =
     modBy (getNumPlayers gameState) (gameState.playerTurn + 1)
+
+
+shuffleList : Seed -> List a -> List a
+shuffleList seed list =
+    shuffleListHelper seed list []
+
+
+shuffleListHelper : Seed -> List a -> List a -> List a
+shuffleListHelper seed source result =
+    if List.isEmpty source then
+        result
+
+    else
+        let
+            indexGenerator =
+                int 0 (List.length source - 1)
+
+            ( index, nextSeed ) =
+                step indexGenerator seed
+
+            valAtIndex =
+                getAt index source
+
+            sourceWithoutIndex =
+                removeAt index source
+        in
+        case valAtIndex of
+            Just val ->
+                shuffleListHelper nextSeed sourceWithoutIndex (val :: result)
+
+            Nothing ->
+                -- TODO impossible state
+                result

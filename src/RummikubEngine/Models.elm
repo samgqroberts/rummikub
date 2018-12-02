@@ -1,4 +1,4 @@
-module RummikubEngine.Models exposing (Board, Color(..), GameConfig, GameState, Group, Number(..), PlayerHand, PlayerHands, Tile, Unflipped)
+module RummikubEngine.Models exposing (Board, Color(..), GameConfig, GameState, Group, Move(..), Number(..), PlayerHand, PlayerHands, Tile, Unflipped)
 
 
 type Color
@@ -46,6 +46,11 @@ type alias Board =
 
 type alias Unflipped =
     List Tile
+
+
+type Move
+    = Play Board
+    | TakeTile
 
 
 type alias GameConfig =

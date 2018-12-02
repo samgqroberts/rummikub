@@ -46,11 +46,11 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
                                         (\_ ( currUnflipped, currPlayerHands ) ->
                                             let
                                                 ( newUnflipped, newPlayerHand ) =
-                                                    takeTiles seed currUnflipped startingPlayerTileCount
+                                                    takeTiles currUnflipped startingPlayerTileCount
                                             in
                                             ( newUnflipped, newPlayerHand :: currPlayerHands )
                                         )
-                                        ( generateAllTiles tileDuplicates, [] )
+                                        (Tuple.mapFirst (shuffleList seed) ( generateAllTiles tileDuplicates, [] ))
                                         (List.range 0 (numPlayers - 1))
                             in
                             Ok
@@ -61,43 +61,68 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
                                 }
 
 
-attemptMove : GameState -> Board -> Result String GameState
-attemptMove current newBoard =
-    let
-        currentPlayerHand =
-            defaultingToEmptyList (getAt current.playerTurn current.playerHands)
+getCurrentPlayerHand : GameState -> PlayerHand
+getCurrentPlayerHand gameState =
+    defaultingToEmptyList (getAt gameState.playerTurn gameState.playerHands)
 
-        newBoardTiles =
-            List.concatMap (\a -> a) newBoard
 
-        currentBoardTiles =
-            List.concatMap (\a -> a) current.board
+attemptMove : GameState -> Move -> Result String GameState
+attemptMove current move =
+    case move of
+        TakeTile ->
+            let
+                currentPlayerHand =
+                    getCurrentPlayerHand current
 
-        ( playedTiles, _ ) =
-            listDiff newBoardTiles currentBoardTiles
-    in
-    case containsAll currentPlayerHand playedTiles of
-        False ->
-            Err "Some played tiles are not in the player's hand"
+                ( newUnflipped, newCurrentPlayerHand ) =
+                    moveTile ( current.unflipped, currentPlayerHand )
 
-        True ->
-            case isValidBoard newBoard of
+                newPlayerHands =
+                    Maybe.withDefault current.playerHands (replaceAt current.playerTurn newCurrentPlayerHand current.playerHands)
+            in
+            Ok
+                { current
+                    | playerHands = newPlayerHands
+                    , unflipped = newUnflipped
+                    , playerTurn = nextPlayerTurn current
+                }
+
+        Play newBoard ->
+            let
+                currentPlayerHand =
+                    defaultingToEmptyList (getAt current.playerTurn current.playerHands)
+
+                newBoardTiles =
+                    List.concatMap (\a -> a) newBoard
+
+                currentBoardTiles =
+                    List.concatMap (\a -> a) current.board
+
+                ( playedTiles, _ ) =
+                    listDiff newBoardTiles currentBoardTiles
+            in
+            case containsAll currentPlayerHand playedTiles of
                 False ->
-                    Err "Some played groups are not valid"
+                    Err "Some played tiles are not in the player's hand"
 
                 True ->
-                    let
-                        ( newCurrentPlayerHand, _ ) =
-                            listDiff currentPlayerHand playedTiles
+                    case isValidBoard newBoard of
+                        False ->
+                            Err "Some played groups are not valid"
 
-                        newPlayerHands =
-                            replaceAt current.playerTurn newCurrentPlayerHand current.playerHands
-                                -- TODO impossible state
-                                |> Maybe.withDefault current.playerHands
-                    in
-                    Ok
-                        { current
-                            | board = newBoard
-                            , playerHands = newPlayerHands
-                            , playerTurn = nextPlayerTurn current
-                        }
+                        True ->
+                            let
+                                ( newCurrentPlayerHand, _ ) =
+                                    listDiff currentPlayerHand playedTiles
+
+                                newPlayerHands =
+                                    replaceAt current.playerTurn newCurrentPlayerHand current.playerHands
+                                        -- TODO impossible state
+                                        |> Maybe.withDefault current.playerHands
+                            in
+                            Ok
+                                { current
+                                    | board = newBoard
+                                    , playerHands = newPlayerHands
+                                    , playerTurn = nextPlayerTurn current
+                                }

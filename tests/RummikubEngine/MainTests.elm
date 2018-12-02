@@ -162,7 +162,47 @@ all =
                         |> Expect.equal (Err "Must have a positive number of tile duplicates")
             ]
         , describe "attemptMove"
-            [ test "using tiles not in the player's hand" <|
+            [ describe "TakeTile"
+                [ test "with enough tiles left" <|
+                    \_ ->
+                        let
+                            current =
+                                { unflipped = [ ( Red, Four ), ( Blue, Nine ) ]
+                                , board = []
+                                , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                , playerTurn = 0
+                                }
+                        in
+                        attemptMove current TakeTile
+                            |> Expect.equal
+                                (Ok
+                                    { unflipped = [ ( Blue, Nine ) ]
+                                    , board = []
+                                    , playerHands = [ [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], [] ]
+                                    , playerTurn = 1
+                                    }
+                                )
+                , test "without enough tiles left (pass)" <|
+                    \_ ->
+                        let
+                            current =
+                                { unflipped = []
+                                , board = []
+                                , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                , playerTurn = 0
+                                }
+                        in
+                        attemptMove current TakeTile
+                            |> Expect.equal
+                                (Ok
+                                    { unflipped = []
+                                    , board = []
+                                    , playerHands = [ [ ( Red, Two ), ( Red, Three ) ], [] ]
+                                    , playerTurn = 1
+                                    }
+                                )
+                ]
+            , test "using tiles not in the player's hand" <|
                 \_ ->
                     let
                         current =
@@ -175,7 +215,7 @@ all =
                         newBoard =
                             [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
                     in
-                    attemptMove current newBoard
+                    attemptMove current (Play newBoard)
                         |> Expect.equal (Err "Some played tiles are not in the player's hand")
             , test "playing some invalid groups" <|
                 \_ ->
@@ -190,7 +230,7 @@ all =
                         newBoard =
                             [ [ ( Red, Two ), ( Red, Three ) ] ]
                     in
-                    attemptMove current newBoard
+                    attemptMove current (Play newBoard)
                         |> Expect.equal (Err "Some played groups are not valid")
             , test "valid move" <|
                 \_ ->
@@ -208,7 +248,7 @@ all =
                         newBoard =
                             [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
                     in
-                    attemptMove current newBoard
+                    attemptMove current (Play newBoard)
                         |> Expect.equal
                             (Ok
                                 { unflipped = []

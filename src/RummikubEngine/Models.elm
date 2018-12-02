@@ -50,7 +50,8 @@ type alias Unflipped =
 
 type alias GameConfig =
     { numPlayers : Int
-    , tileDuplicates : Int
+    , tileDuplicates : Int -- how many (Black, One) tiles are there?
+    , startingPlayerTileCount : Int
     }
 
 

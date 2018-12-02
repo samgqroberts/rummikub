@@ -10,7 +10,7 @@ import Tuple
 
 newGameWithDefaults : Seed -> GameState
 newGameWithDefaults seed =
-    case newGame seed { numPlayers = defaultNumPlayers, tileDuplicates = defaultTileDuplicates } of
+    case newGame seed defaultGameConfig of
         Err msg ->
             -- TODO ideally impossible state
             { unflipped = [], playerHands = [], board = [], playerTurn = 0 }
@@ -20,7 +20,7 @@ newGameWithDefaults seed =
 
 
 newGame : Seed -> GameConfig -> Result String GameState
-newGame seed { numPlayers, tileDuplicates } =
+newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
     case numPlayers < 1 of
         True ->
             Err "Must have a positive number of players"
@@ -32,9 +32,6 @@ newGame seed { numPlayers, tileDuplicates } =
 
                 False ->
                     let
-                        startingPlayerTileCount =
-                            defaultStartingPlayerTileCount
-
                         allTiles =
                             generateAllTiles tileDuplicates
                     in
@@ -49,7 +46,7 @@ newGame seed { numPlayers, tileDuplicates } =
                                         (\_ ( currUnflipped, currPlayerHands ) ->
                                             let
                                                 ( newUnflipped, newPlayerHand ) =
-                                                    takeTiles seed currUnflipped defaultStartingPlayerTileCount
+                                                    takeTiles seed currUnflipped startingPlayerTileCount
                                             in
                                             ( newUnflipped, newPlayerHand :: currPlayerHands )
                                         )

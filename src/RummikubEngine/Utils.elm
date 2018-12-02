@@ -1,9 +1,9 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultNumPlayers, defaultStartingPlayerTileCount, defaultTileDuplicates, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, generateAllTiles, getColor, getNumPlayers, getNumber, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, takeRandomTile, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed)
-import RummikubEngine.Models exposing (Board, Color(..), GameState, Group, Number(..), PlayerHand, Tile)
+import RummikubEngine.Models exposing (..)
 import Tuple
 
 
@@ -28,18 +28,12 @@ numbers =
     ]
 
 
-{-| how many (Black, One) tiles are there?
--}
-defaultTileDuplicates =
-    2
-
-
-defaultNumPlayers =
-    4
-
-
-defaultStartingPlayerTileCount =
-    14
+defaultGameConfig : GameConfig
+defaultGameConfig =
+    { numPlayers = 4
+    , tileDuplicates = 2
+    , startingPlayerTileCount = 14
+    }
 
 
 getColor : Tile -> Color

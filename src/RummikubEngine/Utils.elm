@@ -1,7 +1,7 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAll, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileIsJoker, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAllTiles, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileIsJoker, tileListDiff, tileListToString, tileToString)
 
 import List
-import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
+import List.Extra exposing (findIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
@@ -421,16 +421,54 @@ removeAt index list =
            )
 
 
-listDiff : List a -> List a -> ( List a, List a )
-listDiff minuend subtrahend =
+
+-- note: considers jokers of any variety to be equal
+
+
+tileEquals : Tile -> (Tile -> Bool)
+tileEquals test =
+    \subject ->
+        case subject of
+            Card subjectTileValue ->
+                case test of
+                    Card testTileValue ->
+                        subjectTileValue == testTileValue
+
+                    Joker _ ->
+                        False
+
+            Joker _ ->
+                case test of
+                    Card tileValue ->
+                        False
+
+                    Joker tileValueMaybe ->
+                        True
+
+
+
+-- note: considers jokers of any variety to be equal
+
+
+tileListElemIndex : Tile -> List Tile -> Maybe Int
+tileListElemIndex test =
+    findIndex (tileEquals test)
+
+
+
+-- note: considers jokers of any variety to be equal
+
+
+tileListDiff : List Tile -> List Tile -> ( List Tile, List Tile )
+tileListDiff minuend subtrahend =
     List.foldl
         (\element ( leftList, rightList ) ->
-            case elemIndex element leftList of
+            case tileListElemIndex element leftList of
                 Nothing ->
                     ( leftList, rightList )
 
                 Just leftIndex ->
-                    case elemIndex element rightList of
+                    case tileListElemIndex element rightList of
                         Nothing ->
                             -- TODO impossible state
                             ( leftList, rightList )
@@ -442,11 +480,15 @@ listDiff minuend subtrahend =
         subtrahend
 
 
-containsAll : List a -> List a -> Bool
-containsAll list1 list2 =
+
+-- note: considers jokers of any variety to be equal
+
+
+containsAllTiles : List Tile -> List Tile -> Bool
+containsAllTiles list1 list2 =
     let
         ( _, remaining ) =
-            listDiff list1 list2
+            tileListDiff list1 list2
     in
     List.isEmpty remaining
 

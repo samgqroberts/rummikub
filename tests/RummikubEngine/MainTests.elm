@@ -131,6 +131,11 @@ neverPlayed tileValues =
     { hand = cards tileValues, hasPlayed = False }
 
 
+neverPlayedWithHand : PlayerHand -> PlayerState
+neverPlayedWithHand hand =
+    { hand = hand, hasPlayed = False }
+
+
 hasPlayed : List TileValue -> PlayerState
 hasPlayed tileValues =
     { hand = cards tileValues, hasPlayed = True }
@@ -203,7 +208,7 @@ all =
                         let
                             current =
                                 { emptyState
-                                    | unflipped = cards [ ( Red, Four ), ( Blue, Nine ) ]
+                                    | unflipped = [ Joker Nothing, Card ( Blue, Nine ) ]
                                     , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                     , playerTurn = 0
                                 }
@@ -212,8 +217,8 @@ all =
                             |> Expect.equal
                                 (Ok
                                     { current
-                                        | unflipped = cards [ ( Blue, Nine ) ]
-                                        , playerStates = [ neverPlayed [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
+                                        | unflipped = [ Card ( Blue, Nine ) ]
+                                        , playerStates = [ neverPlayedWithHand [ Joker Nothing, Card ( Red, Two ), Card ( Red, Three ) ], neverPlayed [] ]
                                         , playerTurn = 1
                                     }
                                 )
@@ -253,15 +258,15 @@ all =
                     \_ ->
                         let
                             groupInPlayerHand =
-                                [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                                [ Card ( Red, Two ), Card ( Red, Three ), Joker (Just ( Red, Four )) ]
 
                             current =
                                 { emptyState
-                                    | playerStates = [ neverPlayed groupInPlayerHand, neverPlayed [] ]
+                                    | playerStates = [ neverPlayedWithHand groupInPlayerHand, neverPlayed [] ]
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay [ cards groupInPlayerHand ])
+                        attemptMove current (InitialPlay [ groupInPlayerHand ])
                             |> Expect.equal (Err "Initial Play must have point value of 30 or more")
                 , test "using tiles not in player's hand" <|
                     \_ ->
@@ -272,27 +277,32 @@ all =
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay [ cards [ ( Red, Ten ), ( Red, Eleven ), ( Red, Twelve ) ] ])
+                        attemptMove current (InitialPlay [ [ Card ( Red, Ten ), Card ( Red, Eleven ), Joker (Just ( Red, Twelve )) ] ])
                             |> Expect.equal (Err "Some played tiles are not in the player's hand")
-                , test "valid initial play" <|
+                , test "valid initial play with joker assignment" <|
                     \_ ->
                         let
                             groupsInPlayerHand =
-                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
-                                , [ ( Orange, Seven ), ( Black, Seven ), ( Blue, Seven ) ]
+                                [ [ Card ( Red, Two ), Card ( Red, Three ), Joker Nothing ]
+                                , cards [ ( Orange, Seven ), ( Black, Seven ), ( Blue, Seven ) ]
+                                ]
+
+                            groupsPlayed =
+                                [ [ Card ( Red, Two ), Card ( Red, Three ), Joker (Just ( Red, Four )) ]
+                                , cards [ ( Orange, Seven ), ( Black, Seven ), ( Blue, Seven ) ]
                                 ]
 
                             current =
                                 { emptyState
-                                    | playerStates = [ neverPlayed (flattenTileValueGroups groupsInPlayerHand), neverPlayed [] ]
+                                    | playerStates = [ neverPlayedWithHand (flattenGroups groupsInPlayerHand), neverPlayed [] ]
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay (List.map cards groupsInPlayerHand))
+                        attemptMove current (InitialPlay groupsPlayed)
                             |> Expect.equal
                                 (Ok
                                     { current
-                                        | board = List.map cards groupsInPlayerHand
+                                        | board = groupsPlayed
                                         , playerStates = [ hasPlayed [], neverPlayed [] ]
                                         , playerTurn = 1
                                     }

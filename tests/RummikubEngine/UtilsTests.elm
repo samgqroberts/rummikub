@@ -21,9 +21,7 @@ all =
                 \_ ->
                     List.length allUniqueTiles
                         |> Expect.equal
-                            (List.length colors
-                                * List.length numbers
-                            )
+                            (List.length colors * List.length numbers)
             ]
         , describe "generateAllTiles"
             [ test "has correct size with no duplication" <|
@@ -36,17 +34,19 @@ all =
                     generateAllTiles 2 0
                         |> List.length
                         |> Expect.equal
-                            (List.length allUniqueTiles
-                                * 2
-                            )
+                            (List.length allUniqueTiles * 2)
             , test "has correct size with 3 duplicates per" <|
                 \_ ->
                     generateAllTiles 3 0
                         |> List.length
                         |> Expect.equal
-                            (List.length allUniqueTiles
-                                * 3
-                            )
+                            (List.length allUniqueTiles * 3)
+            , test "has correct size with 2 duplicates per, and 2 jokers" <|
+                \_ ->
+                    generateAllTiles 2 2
+                        |> List.length
+                        |> Expect.equal
+                            ((List.length allUniqueTiles * 2) + 2)
             ]
         , describe "allColorsTheSame"
             [ test "1 of the same color" <|
@@ -156,44 +156,56 @@ all =
                         ]
                         |> Expect.equal False
             ]
-        , describe "listDiff"
+        , describe "tileListDiff"
             [ test "with one of any element and perfect containment" <|
                 \_ ->
-                    listDiff [ 1, 2, 3 ] [ 1, 2 ]
-                        |> Expect.equal ( [ 3 ], [] )
+                    tileListDiff [ Card ( Red, Two ), Card ( Red, Three ), Card ( Red, Four ) ] [ Card ( Red, Two ), Card ( Red, Three ) ]
+                        |> Expect.equal ( [ Card ( Red, Four ) ], [] )
             , test "with multiple equal elements" <|
                 \_ ->
-                    listDiff [ 1, 2, 2, 3, 3 ] [ 1, 2 ]
-                        |> Expect.equal ( [ 2, 3, 3 ], [] )
+                    tileListDiff [ Card ( Red, Two ), Card ( Red, Two ), Card ( Red, Three ), Card ( Red, Three ) ] [ Card ( Red, Two ) ]
+                        |> Expect.equal ( [ Card ( Red, Two ), Card ( Red, Three ), Card ( Red, Three ) ], [] )
             , test "with elements in subtrahend not present in minuend" <|
                 \_ ->
-                    listDiff [ 1, 2, 2 ] [ 2, 3 ]
-                        |> Expect.equal ( [ 1, 2 ], [ 3 ] )
+                    tileListDiff [ Card ( Red, Two ) ] [ Card ( Red, Two ), Card ( Red, Three ) ]
+                        |> Expect.equal ( [], [ Card ( Red, Three ) ] )
             , test "with empty minuend" <|
                 \_ ->
-                    listDiff [] [ 1 ]
-                        |> Expect.equal ( [], [ 1 ] )
+                    tileListDiff [] [ Card ( Red, Two ) ]
+                        |> Expect.equal ( [], [ Card ( Red, Two ) ] )
             , test "with empty subtrahend" <|
                 \_ ->
-                    listDiff [ 1, 2 ] []
-                        |> Expect.equal ( [ 1, 2 ], [] )
+                    tileListDiff [ Card ( Red, Two ) ] []
+                        |> Expect.equal ( [ Card ( Red, Two ) ], [] )
+            , test "with jokers of different assignment" <|
+                \_ ->
+                    tileListDiff [ Card ( Red, Two ), Joker (Just ( Red, Three )) ] [ Joker Nothing ]
+                        |> Expect.equal ( [ Card ( Red, Two ) ], [] )
+            , test "with multiple duplicate jokers" <|
+                \_ ->
+                    tileListDiff [ Joker Nothing, Joker (Just ( Red, Three )) ] [ Joker Nothing, Card ( Red, Three ) ]
+                        |> Expect.equal ( [ Joker (Just ( Red, Three )) ], [ Card ( Red, Three ) ] )
             ]
-        , describe "containsAll"
+        , describe "containsAllTiles"
             [ test "with one of any element and perfect containment" <|
                 \_ ->
-                    containsAll [ 1, 2, 3 ] [ 1, 2 ]
+                    containsAllTiles [ Card ( Red, Two ), Card ( Red, Three ) ] [ Card ( Red, Two ) ]
                         |> Expect.equal True
             , test "with one of any element and imperfect containment" <|
                 \_ ->
-                    containsAll [ 1, 2, 3 ] [ 1, 2, 4 ]
+                    containsAllTiles [ Card ( Red, Three ), Card ( Red, Four ) ] [ Card ( Red, Three ), Card ( Red, Five ) ]
                         |> Expect.equal False
             , test "with duplicate elements and perfect containment" <|
                 \_ ->
-                    containsAll [ 1, 2, 2, 3, 3 ] [ 1, 2, 2 ]
+                    containsAllTiles
+                        [ Card ( Red, One ), Card ( Blue, Two ), Card ( Blue, Two ), Card ( Orange, Three ) ]
+                        [ Card ( Red, One ), Card ( Blue, Two ), Card ( Blue, Two ) ]
                         |> Expect.equal True
-            , test "with dupliacte elements and imperfect containment" <|
+            , test "with duplicate elements and imperfect containment" <|
                 \_ ->
-                    containsAll [ 1, 2, 2, 3, 3 ] [ 1, 2, 4 ]
+                    containsAllTiles
+                        [ Card ( Red, One ), Card ( Blue, Two ), Card ( Blue, Two ), Card ( Orange, Three ) ]
+                        [ Card ( Red, One ), Card ( Blue, Two ), Card ( Black, Three ) ]
                         |> Expect.equal False
             ]
         , describe "replaceAt"

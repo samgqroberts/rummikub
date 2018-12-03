@@ -139,7 +139,7 @@ attemptMove current move =
                                     Err "Initial Play must have point value of 30 or more"
 
                                 False ->
-                                    case containsAll (getCurrentPlayerHand current) (flattenGroups groups) of
+                                    case containsAllTiles (getCurrentPlayerHand current) (flattenGroups groups) of
                                         False ->
                                             tilesNotInHandError
 
@@ -154,7 +154,7 @@ attemptMove current move =
                                                 newCurrentPlayerState =
                                                     { currentPlayerState
                                                         | hasPlayed = True
-                                                        , hand = listDiff (getHand currentPlayerState) (flattenGroups groups) |> Tuple.first
+                                                        , hand = tileListDiff (getHand currentPlayerState) (flattenGroups groups) |> Tuple.first
                                                     }
 
                                                 newPlayerStates =
@@ -190,9 +190,9 @@ attemptMove current move =
                             List.concatMap (\a -> a) current.board
 
                         ( playedTiles, _ ) =
-                            listDiff newBoardTiles currentBoardTiles
+                            tileListDiff newBoardTiles currentBoardTiles
                     in
-                    case containsAll currentPlayerHand playedTiles of
+                    case containsAllTiles currentPlayerHand playedTiles of
                         False ->
                             tilesNotInHandError
 
@@ -204,7 +204,7 @@ attemptMove current move =
                                 True ->
                                     let
                                         ( newCurrentPlayerHand, _ ) =
-                                            listDiff currentPlayerHand playedTiles
+                                            tileListDiff currentPlayerHand playedTiles
 
                                         newCurrentPlayerState =
                                             { currentPlayerState

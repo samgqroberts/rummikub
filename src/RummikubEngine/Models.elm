@@ -67,6 +67,7 @@ type alias GameConfig =
     { numPlayers : Int
     , tileDuplicates : Int -- how many (Black, One) tiles are there?
     , startingPlayerTileCount : Int
+    , numJokers : Int
     }
 
 

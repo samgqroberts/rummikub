@@ -18,10 +18,6 @@ defaultInitialSeed =
     Random.initialSeed 10
 
 
-defaultTotalNumTiles =
-    List.length (generateAllTiles defaultGameConfig.tileDuplicates)
-
-
 type alias GameGenerator =
     Int -> Result String GameState
 
@@ -62,12 +58,23 @@ testAllPlayersHaveCorrectNumberOfTiles { startingPlayerTileCount } getNewGame =
 
 
 testCorrectTotalNumberOfTilesInGame : GameConfig -> GameGenerator -> Test
-testCorrectTotalNumberOfTilesInGame { tileDuplicates } getNewGame =
+testCorrectTotalNumberOfTilesInGame { tileDuplicates, numJokers } getNewGame =
     newGameTest "total number of tiles in the game is correct" getNewGame <|
         \state ->
             state
                 |> getAllTilesCount
-                |> Expect.equal (List.length (generateAllTiles tileDuplicates))
+                |> Expect.equal (List.length (generateAllTiles tileDuplicates numJokers))
+
+
+testCorrectNumJokers : GameConfig -> GameGenerator -> Test
+testCorrectNumJokers { numJokers } getNewGame =
+    newGameTest "total number of jokers in the game is correct" getNewGame <|
+        \state ->
+            state
+                |> getAllTiles
+                |> List.filter tileIsJoker
+                |> List.length
+                |> Expect.equal numJokers
 
 
 testNoPlayedTiles : GameGenerator -> Test
@@ -113,6 +120,7 @@ newGameTestSuite config =
         [ testNumberOfPlayerHandsIsCorrect config
         , testAllPlayersHaveCorrectNumberOfTiles config
         , testCorrectTotalNumberOfTilesInGame config
+        , testCorrectNumJokers config
         , testNoPlayedTiles
         , testNoPlayerHasPlayed
         ]

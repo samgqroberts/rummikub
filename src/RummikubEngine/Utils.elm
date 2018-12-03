@@ -1,10 +1,20 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAll, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAll, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileIsJoker, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
+
+
+tileIsJoker : Tile -> Bool
+tileIsJoker tile =
+    case tile of
+        Card _ ->
+            False
+
+        Joker _ ->
+            True
 
 
 flattenGroups : List Group -> List Tile
@@ -76,6 +86,7 @@ defaultGameConfig =
     { numPlayers = 4
     , tileDuplicates = 2
     , startingPlayerTileCount = 14
+    , numJokers = 2
     }
 
 
@@ -270,10 +281,11 @@ createCardsForColor color =
         |> List.map (\number -> Card ( color, number ))
 
 
-generateAllTiles : Int -> List Tile
-generateAllTiles tileDuplicates =
+generateAllTiles : Int -> Int -> List Tile
+generateAllTiles tileDuplicates numJokers =
     allUniqueTiles
         |> List.concatMap (\uniqueTile -> List.repeat tileDuplicates uniqueTile)
+        |> List.append (List.repeat numJokers (Joker Nothing))
 
 
 allUniqueTiles : List Tile

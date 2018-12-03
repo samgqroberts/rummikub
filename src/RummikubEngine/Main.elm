@@ -29,7 +29,7 @@ playerHasWon gameState =
 
 
 newGame : Seed -> GameConfig -> Result String GameState
-newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
+newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount, numJokers } =
     case numPlayers < 1 of
         True ->
             Err "Must have a positive number of players"
@@ -42,7 +42,7 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
                 False ->
                     let
                         allTiles =
-                            generateAllTiles tileDuplicates
+                            generateAllTiles tileDuplicates numJokers
                     in
                     case (startingPlayerTileCount * numPlayers) > List.length allTiles of
                         True ->
@@ -59,7 +59,7 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount } =
                                             in
                                             ( newUnflipped, newPlayerHand :: currPlayerHands )
                                         )
-                                        (Tuple.mapFirst (shuffleList seed) ( generateAllTiles tileDuplicates, [] ))
+                                        (Tuple.mapFirst (shuffleList seed) ( allTiles, [] ))
                                         (List.range 0 (numPlayers - 1))
                             in
                             Ok

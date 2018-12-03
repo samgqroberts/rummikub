@@ -118,14 +118,14 @@ newGameTestSuite config =
         ]
 
 
-neverPlayed : PlayerHand -> PlayerState
-neverPlayed playerHand =
-    { hand = playerHand, hasPlayed = False }
+neverPlayed : List TileValue -> PlayerState
+neverPlayed tileValues =
+    { hand = cards tileValues, hasPlayed = False }
 
 
-hasPlayed : PlayerHand -> PlayerState
-hasPlayed playerHand =
-    { hand = playerHand, hasPlayed = True }
+hasPlayed : List TileValue -> PlayerState
+hasPlayed tileValues =
+    { hand = cards tileValues, hasPlayed = True }
 
 
 emptyState : GameState
@@ -195,7 +195,7 @@ all =
                         let
                             current =
                                 { emptyState
-                                    | unflipped = [ ( Red, Four ), ( Blue, Nine ) ]
+                                    | unflipped = cards [ ( Red, Four ), ( Blue, Nine ) ]
                                     , playerStates = [ neverPlayed [ ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                     , playerTurn = 0
                                 }
@@ -204,7 +204,7 @@ all =
                             |> Expect.equal
                                 (Ok
                                     { current
-                                        | unflipped = [ ( Blue, Nine ) ]
+                                        | unflipped = cards [ ( Blue, Nine ) ]
                                         , playerStates = [ neverPlayed [ ( Red, Four ), ( Red, Two ), ( Red, Three ) ], neverPlayed [] ]
                                         , playerTurn = 1
                                     }
@@ -239,7 +239,7 @@ all =
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay [ groupInPlayerHand ])
+                        attemptMove current (InitialPlay [ cards groupInPlayerHand ])
                             |> Expect.equal (Err "Current player has already made an Initial Play")
                 , test "without enough point value" <|
                     \_ ->
@@ -253,7 +253,7 @@ all =
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay [ groupInPlayerHand ])
+                        attemptMove current (InitialPlay [ cards groupInPlayerHand ])
                             |> Expect.equal (Err "Initial Play must have point value of 30 or more")
                 , test "using tiles not in player's hand" <|
                     \_ ->
@@ -264,7 +264,7 @@ all =
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay [ [ ( Red, Ten ), ( Red, Eleven ), ( Red, Thirteen ) ] ])
+                        attemptMove current (InitialPlay [ cards [ ( Red, Ten ), ( Red, Eleven ), ( Red, Twelve ) ] ])
                             |> Expect.equal (Err "Some played tiles are not in the player's hand")
                 , test "valid initial play" <|
                     \_ ->
@@ -276,15 +276,15 @@ all =
 
                             current =
                                 { emptyState
-                                    | playerStates = [ neverPlayed (flattenGroups groupsInPlayerHand), neverPlayed [] ]
+                                    | playerStates = [ neverPlayed (flattenTileValueGroups groupsInPlayerHand), neverPlayed [] ]
                                     , playerTurn = 0
                                 }
                         in
-                        attemptMove current (InitialPlay groupsInPlayerHand)
+                        attemptMove current (InitialPlay (List.map cards groupsInPlayerHand))
                             |> Expect.equal
                                 (Ok
                                     { current
-                                        | board = groupsInPlayerHand
+                                        | board = List.map cards groupsInPlayerHand
                                         , playerStates = [ hasPlayed [], neverPlayed [] ]
                                         , playerTurn = 1
                                     }
@@ -303,7 +303,7 @@ all =
                                 }
 
                             newBoard =
-                                [ groupInPlayerHand ]
+                                [ cards groupInPlayerHand ]
                         in
                         attemptMove current (Play newBoard)
                             |> Expect.equal (Err "Current player must make an Initial Play first")
@@ -316,7 +316,7 @@ all =
                                 }
 
                             newBoard =
-                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                                [ cards [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
                         in
                         attemptMove current (Play newBoard)
                             |> Expect.equal (Err "Some played tiles are not in the player's hand")
@@ -329,7 +329,7 @@ all =
                                 }
 
                             newBoard =
-                                [ [ ( Red, Two ), ( Red, Three ) ] ]
+                                [ cards [ ( Red, Two ), ( Red, Three ) ] ]
                         in
                         attemptMove current (Play newBoard)
                             |> Expect.equal (Err "Some played groups are not valid")
@@ -346,7 +346,7 @@ all =
                                 }
 
                             newBoard =
-                                [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
+                                [ cards [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ]
                         in
                         attemptMove current (Play newBoard)
                             |> Expect.equal

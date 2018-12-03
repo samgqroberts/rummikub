@@ -1,4 +1,4 @@
-module RummikubEngine.Models exposing (Board, Color(..), GameConfig, GameState, Group, Move(..), Number(..), PlayerHand, PlayerHands, PlayerState, PlayerStates, Tile, Unflipped)
+module RummikubEngine.Models exposing (Board, Color(..), GameConfig, GameState, Group, Move(..), Number(..), PlayerHand, PlayerHands, PlayerState, PlayerStates, Tile(..), TileValue, TileValueGroup, Unflipped)
 
 
 type Color
@@ -24,8 +24,17 @@ type Number
     | Thirteen
 
 
-type alias Tile =
+type alias TileValue =
     ( Color, Number )
+
+
+type Tile
+    = Card TileValue
+    | Joker (Maybe TileValue)
+
+
+type alias TileValueGroup =
+    List TileValue
 
 
 type alias Group =

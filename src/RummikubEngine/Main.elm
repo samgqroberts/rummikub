@@ -93,6 +93,11 @@ tilesNotInHandError =
     Err "Some played tiles are not in the player's hand"
 
 
+invalidGroupsError : Result String GameState
+invalidGroupsError =
+    Err "Some played groups are not valid"
+
+
 attemptMove : GameState -> Move -> Result String GameState
 attemptMove current move =
     case move of
@@ -124,41 +129,46 @@ attemptMove current move =
                     Err "Current player has already made an Initial Play"
 
                 False ->
-                    case getPointValue groups < 30 of
-                        True ->
-                            Err "Initial Play must have point value of 30 or more"
+                    case getInitialPlayPointValue groups of
+                        Nothing ->
+                            invalidGroupsError
 
-                        False ->
-                            case containsAll (getCurrentPlayerHand current) (flattenGroups groups) of
-                                False ->
-                                    tilesNotInHandError
-
+                        Just pointValue ->
+                            case pointValue < 30 of
                                 True ->
-                                    let
-                                        currentPlayerTurn =
-                                            getPlayerTurn current
+                                    Err "Initial Play must have point value of 30 or more"
 
-                                        currentPlayerState =
-                                            getCurrentPlayerState current
+                                False ->
+                                    case containsAll (getCurrentPlayerHand current) (flattenGroups groups) of
+                                        False ->
+                                            tilesNotInHandError
 
-                                        newCurrentPlayerState =
-                                            { currentPlayerState
-                                                | hasPlayed = True
-                                                , hand = listDiff (getHand currentPlayerState) (flattenGroups groups) |> Tuple.first
-                                            }
+                                        True ->
+                                            let
+                                                currentPlayerTurn =
+                                                    getPlayerTurn current
 
-                                        newPlayerStates =
-                                            Maybe.withDefault (getPlayerStates current) (replaceAt currentPlayerTurn newCurrentPlayerState (getPlayerStates current))
+                                                currentPlayerState =
+                                                    getCurrentPlayerState current
 
-                                        newBoard =
-                                            List.concat [ groups, getBoard current ]
-                                    in
-                                    Ok
-                                        { current
-                                            | playerTurn = nextPlayerTurn current
-                                            , playerStates = newPlayerStates
-                                            , board = newBoard
-                                        }
+                                                newCurrentPlayerState =
+                                                    { currentPlayerState
+                                                        | hasPlayed = True
+                                                        , hand = listDiff (getHand currentPlayerState) (flattenGroups groups) |> Tuple.first
+                                                    }
+
+                                                newPlayerStates =
+                                                    Maybe.withDefault (getPlayerStates current) (replaceAt currentPlayerTurn newCurrentPlayerState (getPlayerStates current))
+
+                                                newBoard =
+                                                    List.concat [ groups, getBoard current ]
+                                            in
+                                            Ok
+                                                { current
+                                                    | playerTurn = nextPlayerTurn current
+                                                    , playerStates = newPlayerStates
+                                                    , board = newBoard
+                                                }
 
         Play newBoard ->
             case getCurrentPlayerHasPlayed current of
@@ -189,7 +199,7 @@ attemptMove current move =
                         True ->
                             case isValidBoard newBoard of
                                 False ->
-                                    Err "Some played groups are not valid"
+                                    invalidGroupsError
 
                                 True ->
                                     let

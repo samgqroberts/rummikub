@@ -1,4 +1,4 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, colorToInt, colorToString, colors, containsAll, createTile, createTilesForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, getPointValue, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAll, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, listDiff, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (elemIndex, getAt, splitAt, uniqueBy)
@@ -10,7 +10,13 @@ import Tuple
 flattenGroups : List Group -> List Tile
 flattenGroups groups =
     groups
-        |> List.concatMap (\a -> a)
+        |> List.concatMap identity
+
+
+flattenTileValueGroups : List TileValueGroup -> List TileValue
+flattenTileValueGroups groups =
+    groups
+        |> List.concatMap identity
 
 
 getPlayerStates : GameState -> PlayerStates
@@ -73,19 +79,19 @@ defaultGameConfig =
     }
 
 
-getColor : Tile -> Color
-getColor tile =
-    Tuple.first tile
+getColor : TileValue -> Color
+getColor ( color, _ ) =
+    color
 
 
-getNumber : Tile -> Number
-getNumber tile =
-    Tuple.second tile
+getNumber : TileValue -> Number
+getNumber ( _, number ) =
+    number
 
 
-createTile : Color -> Number -> Tile
-createTile color number =
-    ( color, number )
+createCard : Color -> Number -> Tile
+createCard color number =
+    Card ( color, number )
 
 
 colorToInt : Color -> Int
@@ -216,16 +222,36 @@ groupToString group =
     tileListToString group
 
 
-tileToString : Tile -> String
-tileToString tile =
+tileValueToString : TileValue -> String
+tileValueToString tileValue =
     let
         colorString =
-            colorToString (getColor tile)
+            colorToString (getColor tileValue)
 
         numberString =
-            numberToString (getNumber tile)
+            numberToString (getNumber tileValue)
     in
     "(" ++ colorString ++ ", " ++ numberString ++ ")"
+
+
+tileValueMaybeToString : Maybe TileValue -> String
+tileValueMaybeToString tileValueMaybe =
+    case tileValueMaybe of
+        Nothing ->
+            "(unassigned)"
+
+        Just tileValue ->
+            tileValueToString tileValue
+
+
+tileToString : Tile -> String
+tileToString tile =
+    case tile of
+        Card tileValue ->
+            "(Card: " ++ tileValueToString tileValue ++ ")"
+
+        Joker tileValueMaybe ->
+            "(Joker: " ++ tileValueMaybeToString tileValueMaybe ++ ")"
 
 
 boardToString : Board -> String
@@ -238,10 +264,10 @@ playerHandToString playerHand =
     tileListToString playerHand
 
 
-createTilesForColor : Color -> List Tile
-createTilesForColor color =
+createCardsForColor : Color -> List Tile
+createCardsForColor color =
     numbers
-        |> List.map (\number -> ( color, number ))
+        |> List.map (\number -> Card ( color, number ))
 
 
 generateAllTiles : Int -> List Tile
@@ -253,7 +279,7 @@ generateAllTiles tileDuplicates =
 allUniqueTiles : List Tile
 allUniqueTiles =
     colors
-        |> List.map createTilesForColor
+        |> List.map createCardsForColor
         |> List.concat
 
 
@@ -275,7 +301,7 @@ takeTiles tiles numTiles =
         |> List.foldl (\_ tilesTuple -> moveTile tilesTuple) ( tiles, [] )
 
 
-allColorsUnique : Group -> Bool
+allColorsUnique : TileValueGroup -> Bool
 allColorsUnique group =
     let
         colorsInGroup =
@@ -284,7 +310,7 @@ allColorsUnique group =
     List.length (uniqueBy colorToInt colorsInGroup) == List.length colorsInGroup
 
 
-allColorsTheSame : Group -> Bool
+allColorsTheSame : TileValueGroup -> Bool
 allColorsTheSame group =
     case Maybe.map getColor (getAt 0 group) of
         Nothing ->
@@ -294,7 +320,7 @@ allColorsTheSame group =
             List.all (\tile -> getColor tile == firstColor) group
 
 
-allNumbersTheSame : Group -> Bool
+allNumbersTheSame : TileValueGroup -> Bool
 allNumbersTheSame group =
     case Maybe.map getNumber (getAt 0 group) of
         Nothing ->
@@ -304,7 +330,7 @@ allNumbersTheSame group =
             List.all (\tile -> getNumber tile == firstNumber) group
 
 
-allNumbersSequential : Group -> Bool
+allNumbersSequential : TileValueGroup -> Bool
 allNumbersSequential group =
     let
         sortedNumbers =
@@ -325,13 +351,49 @@ allNumbersSequential group =
                     lastNum - firstNum == List.length sortedNumbers - 1
 
 
+toTileValue : Tile -> Maybe TileValue
+toTileValue tile =
+    case tile of
+        Card tileValue ->
+            Just tileValue
+
+        Joker tileValueMaybe ->
+            tileValueMaybe
+
+
+toTileValueGroup : Group -> Maybe TileValueGroup
+toTileValueGroup group =
+    let
+        maybeTileValueGroup =
+            List.map toTileValue group
+    in
+    case List.member Nothing maybeTileValueGroup of
+        True ->
+            Nothing
+
+        False ->
+            maybeTileValueGroup
+                |> List.filterMap identity
+                |> Just
+
+
+isValidTileValueGroup : TileValueGroup -> Bool
+isValidTileValueGroup tileValueGroup =
+    List.length tileValueGroup
+        > 2
+        && ((allColorsUnique tileValueGroup && allNumbersTheSame tileValueGroup)
+                || (allColorsTheSame tileValueGroup && allNumbersSequential tileValueGroup)
+           )
+
+
 isValidGroup : Group -> Bool
 isValidGroup group =
-    List.length group
-        > 2
-        && ((allColorsUnique group && allNumbersTheSame group)
-                || (allColorsTheSame group && allNumbersSequential group)
-           )
+    case toTileValueGroup group of
+        Nothing ->
+            False
+
+        Just tileValueGroup ->
+            isValidTileValueGroup tileValueGroup
 
 
 isValidBoard : Board -> Bool
@@ -440,20 +502,49 @@ shuffleListHelper seed source result =
                 result
 
 
-getTilePointValue : Tile -> Int
-getTilePointValue ( _, number ) =
-    numberToInt number
+getTileValuePointValue : TileValue -> Int
+getTileValuePointValue tileValue =
+    getNumber tileValue
+        |> numberToInt
 
 
-getGroupPointValue : Group -> Int
-getGroupPointValue group =
-    group
-        |> List.map getTilePointValue
-        |> List.sum
+getInitialPlayGroupPointValue : Group -> Maybe Int
+getInitialPlayGroupPointValue group =
+    case toTileValueGroup group of
+        Nothing ->
+            Nothing
+
+        Just tvgroup ->
+            case isValidTileValueGroup tvgroup of
+                False ->
+                    Nothing
+
+                True ->
+                    tvgroup
+                        |> List.map getTileValuePointValue
+                        |> List.sum
+                        |> Just
 
 
-getPointValue : List Group -> Int
-getPointValue groups =
-    groups
-        |> List.map getGroupPointValue
-        |> List.sum
+getInitialPlayPointValue : List Group -> Maybe Int
+getInitialPlayPointValue groups =
+    let
+        listOfGroupPointValueMaybes =
+            groups
+                |> List.map getInitialPlayGroupPointValue
+    in
+    case List.member Nothing listOfGroupPointValueMaybes of
+        True ->
+            Nothing
+
+        False ->
+            listOfGroupPointValueMaybes
+                |> List.filterMap identity
+                |> List.sum
+                |> Just
+
+
+cards : List TileValue -> List Tile
+cards tileValueGroupList =
+    tileValueGroupList
+        |> List.map Card

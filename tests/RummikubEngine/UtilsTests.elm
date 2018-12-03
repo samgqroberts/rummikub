@@ -88,69 +88,71 @@ all =
         , describe "isValidGroup"
             [ test "3 of the same number" <|
                 \_ ->
-                    isValidGroup [ ( Black, One ), ( Blue, One ), ( Orange, One ) ] |> Expect.equal True
+                    isValidGroup (cards [ ( Black, One ), ( Blue, One ), ( Orange, One ) ]) |> Expect.equal True
             , test "4 of the same number" <|
                 \_ ->
-                    isValidGroup [ ( Blue, Two ), ( Orange, Two ), ( Black, Two ), ( Red, Two ) ] |> Expect.equal True
+                    isValidGroup (cards [ ( Blue, Two ), ( Orange, Two ), ( Black, Two ), ( Red, Two ) ]) |> Expect.equal True
             , test "3 number run" <|
                 \_ ->
-                    isValidGroup [ ( Blue, Five ), ( Blue, Four ), ( Blue, Six ) ] |> Expect.equal True
+                    isValidGroup (cards [ ( Blue, Five ), ( Blue, Four ), ( Blue, Six ) ]) |> Expect.equal True
             , test "13 number run" <|
                 \_ ->
                     isValidGroup
-                        [ ( Blue, One )
-                        , ( Blue, Two )
-                        , ( Blue, Three )
-                        , ( Blue, Four )
-                        , ( Blue, Five )
-                        , ( Blue, Six )
-                        , ( Blue, Seven )
-                        , ( Blue, Eight )
-                        , ( Blue, Nine )
-                        , ( Blue, Ten )
-                        , ( Blue, Eleven )
-                        , ( Blue, Twelve )
-                        , ( Blue, Thirteen )
-                        ]
+                        (cards
+                            [ ( Blue, One )
+                            , ( Blue, Two )
+                            , ( Blue, Three )
+                            , ( Blue, Four )
+                            , ( Blue, Five )
+                            , ( Blue, Six )
+                            , ( Blue, Seven )
+                            , ( Blue, Eight )
+                            , ( Blue, Nine )
+                            , ( Blue, Ten )
+                            , ( Blue, Eleven )
+                            , ( Blue, Twelve )
+                            , ( Blue, Thirteen )
+                            ]
+                        )
                         |> Expect.equal True
             , test "run with mismatched color" <|
                 \_ ->
-                    isValidGroup [ ( Orange, Ten ), ( Red, Eleven ), ( Orange, Twelve ), ( Orange, Thirteen ) ] |> Expect.equal False
+                    isValidGroup (cards [ ( Orange, Ten ), ( Red, Eleven ), ( Orange, Twelve ), ( Orange, Thirteen ) ]) |> Expect.equal False
             , test "run with gap" <|
                 \_ ->
-                    isValidGroup [ ( Red, Two ), ( Red, Four ), ( Red, Five ), ( Red, Six ) ] |> Expect.equal False
+                    isValidGroup (cards [ ( Red, Two ), ( Red, Four ), ( Red, Five ), ( Red, Six ) ]) |> Expect.equal False
             , test "3 of same number + 1 duplicate" <|
                 \_ ->
-                    isValidGroup [ ( Red, Two ), ( Blue, Two ), ( Blue, Two ), ( Orange, Two ) ] |> Expect.equal False
+                    isValidGroup (cards [ ( Red, Two ), ( Blue, Two ), ( Blue, Two ), ( Orange, Two ) ]) |> Expect.equal False
             , test "4 of same number + 1 duplicate" <|
                 \_ ->
-                    isValidGroup [ ( Red, Two ), ( Blue, Two ), ( Blue, Two ), ( Orange, Two ), ( Black, Two ) ] |> Expect.equal False
+                    isValidGroup (cards [ ( Red, Two ), ( Blue, Two ), ( Blue, Two ), ( Orange, Two ), ( Black, Two ) ]) |> Expect.equal False
             , test "0 tile group" <|
                 \_ ->
                     isValidGroup [] |> Expect.equal False
             , test "1 tile group" <|
                 \_ ->
-                    isValidGroup [ ( Red, Two ) ] |> Expect.equal False
+                    isValidGroup [ Card ( Red, Two ) ] |> Expect.equal False
             , test "2 tile group" <|
                 \_ ->
-                    isValidGroup [ ( Red, Two ), ( Red, Three ) ] |> Expect.equal False
+                    isValidGroup (cards [ ( Red, Two ), ( Red, Three ) ]) |> Expect.equal False
             ]
         , describe "isValidBoard"
             [ test "1 valid group" <|
                 \_ ->
-                    isValidBoard [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ] |> Expect.equal True
+                    isValidBoard [ cards [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ] ] |> Expect.equal True
             , test "2 valid groups" <|
                 \_ ->
                     isValidBoard
-                        [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
-                        , [ ( Blue, Thirteen ), ( Orange, Thirteen ), ( Black, Thirteen ) ]
+                        [ cards [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                        , cards [ ( Blue, Thirteen ), ( Orange, Thirteen ), ( Black, Thirteen ) ]
                         ]
                         |> Expect.equal True
             , test "1 valid 1 invalid group" <|
                 \_ ->
                     isValidBoard
-                        [ [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
-                        , [ ( Blue, Thirteen ), ( Blue, Thirteen ), ( Black, Thirteen ) ]
+                        [ cards [ ( Red, Two ), ( Red, Three ), ( Red, Four ) ]
+                        , cards [ ( Blue, Thirteen ), ( Blue, Thirteen ), ( Black, Thirteen ) ]
                         ]
                         |> Expect.equal False
             ]

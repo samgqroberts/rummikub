@@ -70,24 +70,6 @@ newGame seed { numPlayers, tileDuplicates, startingPlayerTileCount, numJokers } 
                                 }
 
 
-getCurrentPlayerState : GameState -> PlayerState
-getCurrentPlayerState gameState =
-    -- TODO impossible state
-    Maybe.withDefault { hand = [], hasPlayed = False } (getAt (getPlayerTurn gameState) (getPlayerStates gameState))
-
-
-getCurrentPlayerHand : GameState -> PlayerHand
-getCurrentPlayerHand gameState =
-    getCurrentPlayerState gameState
-        |> getHand
-
-
-getCurrentPlayerHasPlayed : GameState -> Bool
-getCurrentPlayerHasPlayed gameState =
-    getCurrentPlayerState gameState
-        |> getHasPlayed
-
-
 tilesNotInHandError : Result String GameState
 tilesNotInHandError =
     Err "Some played tiles are not in the player's hand"

@@ -230,4 +230,32 @@ all =
                     replaceAt 3 0 [ 1, 2, 3 ]
                         |> Expect.equal Nothing
             ]
+        , describe "sortTilesByColor"
+            [ test "example 1" <|
+                \_ ->
+                    sortTilesByColor [ Card ( Red, One ), Card ( Blue, Three ), Card ( Blue, Two ), Card ( Orange, Three ), Card ( Black, Two ) ]
+                        |> Expect.equal [ Card ( Black, Two ), Card ( Red, One ), Card ( Orange, Three ), Card ( Blue, Two ), Card ( Blue, Three ) ]
+            , test "sorts by number secondarily" <|
+                \_ ->
+                    sortTilesByColor [ Card ( Red, Three ), Card ( Red, One ), Card ( Red, Two ) ]
+                        |> Expect.equal [ Card ( Red, One ), Card ( Red, Two ), Card ( Red, Three ) ]
+            , test "puts jokers at the back" <|
+                \_ ->
+                    sortTilesByColor [ Card ( Red, Three ), Joker Nothing, Joker Nothing, Card ( Red, One ) ]
+                        |> Expect.equal [ Card ( Red, One ), Card ( Red, Three ), Joker Nothing, Joker Nothing ]
+            ]
+        , describe "sortTilesByNumber"
+            [ test "example 1" <|
+                \_ ->
+                    sortTilesByNumber [ Card ( Red, One ), Card ( Blue, Three ), Card ( Blue, Two ), Card ( Orange, Three ), Card ( Black, Two ) ]
+                        |> Expect.equal [ Card ( Red, One ), Card ( Black, Two ), Card ( Blue, Two ), Card ( Orange, Three ), Card ( Blue, Three ) ]
+            , test "sorts by color secondarily" <|
+                \_ ->
+                    sortTilesByNumber [ Card ( Red, One ), Card ( Black, One ), Card ( Blue, One ), Card ( Orange, One ) ]
+                        |> Expect.equal [ Card ( Black, One ), Card ( Red, One ), Card ( Orange, One ), Card ( Blue, One ) ]
+            , test "puts jokers at the back" <|
+                \_ ->
+                    sortTilesByNumber [ Card ( Red, Three ), Joker Nothing, Joker Nothing, Card ( Red, One ) ]
+                        |> Expect.equal [ Card ( Red, One ), Card ( Red, Three ), Joker Nothing, Joker Nothing ]
+            ]
         ]

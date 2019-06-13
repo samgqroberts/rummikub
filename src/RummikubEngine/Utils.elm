@@ -1,10 +1,120 @@
-module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAllTiles, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, takeTiles, tileIsJoker, tileListDiff, tileListToString, tileToString)
+module RummikubEngine.Utils exposing (allColorsTheSame, allColorsUnique, allNumbersSequential, allNumbersTheSame, allUniqueTiles, boardToString, cards, colorToInt, colorToString, colors, containsAllTiles, createCard, createCardsForColor, defaultGameConfig, defaultingToEmptyList, flattenGroups, flattenTileValueGroups, generateAllTiles, getBoard, getColor, getCurrentPlayerHand, getCurrentPlayerHasPlayed, getCurrentPlayerState, getHand, getHasPlayed, getInitialPlayPointValue, getNumPlayers, getNumber, getPlayerHands, getPlayerStates, getPlayerTurn, groupToString, isValidBoard, isValidGroup, moveTile, nextPlayerTurn, numberToInt, numberToString, numbers, playerHandToString, removeAt, replaceAt, shuffleList, sortTilesByColor, sortTilesByNumber, takeTiles, tileIsJoker, tileListDiff, tileListToString, tileToString)
 
 import List
 import List.Extra exposing (findIndex, getAt, splitAt, uniqueBy)
 import Random exposing (Seed, int, step)
 import RummikubEngine.Models exposing (..)
 import Tuple
+
+
+colorOrdinal : Color -> Int
+colorOrdinal color =
+    case color of
+        Black ->
+            1
+
+        Red ->
+            2
+
+        Orange ->
+            3
+
+        Blue ->
+            4
+
+
+compareColor : Color -> Color -> Order
+compareColor color1 color2 =
+    compare (colorOrdinal color1) (colorOrdinal color2)
+
+
+compareNumber : Number -> Number -> Order
+compareNumber number1 number2 =
+    compare (numberToInt number1) (numberToInt number2)
+
+
+colorThenNumberComparison : Tile -> Tile -> Order
+colorThenNumberComparison tile1 tile2 =
+    case tile1 of
+        Card tileValue1 ->
+            case tile2 of
+                Card tileValue2 ->
+                    case compareColor (getColor tileValue1) (getColor tileValue2) of
+                        LT ->
+                            LT
+
+                        EQ ->
+                            compareNumber (getNumber tileValue1) (getNumber tileValue2)
+
+                        GT ->
+                            GT
+
+                Joker tileValueMaybe ->
+                    LT
+
+        Joker _ ->
+            case tile2 of
+                Card tileValue ->
+                    GT
+
+                Joker tileValueMaybe ->
+                    EQ
+
+
+numberThenColorComparison : Tile -> Tile -> Order
+numberThenColorComparison tile1 tile2 =
+    case tile1 of
+        Card tileValue1 ->
+            case tile2 of
+                Card tileValue2 ->
+                    case compareNumber (getNumber tileValue1) (getNumber tileValue2) of
+                        LT ->
+                            LT
+
+                        EQ ->
+                            compareColor (getColor tileValue1) (getColor tileValue2)
+
+                        GT ->
+                            GT
+
+                Joker tileValueMaybe ->
+                    LT
+
+        Joker _ ->
+            case tile2 of
+                Card tileValue ->
+                    GT
+
+                Joker tileValueMaybe ->
+                    EQ
+
+
+sortTilesByColor : List Tile -> List Tile
+sortTilesByColor tileList =
+    List.sortWith colorThenNumberComparison tileList
+
+
+sortTilesByNumber : List Tile -> List Tile
+sortTilesByNumber tileList =
+    List.sortWith numberThenColorComparison tileList
+
+
+getCurrentPlayerState : GameState -> PlayerState
+getCurrentPlayerState gameState =
+    -- TODO impossible state
+    Maybe.withDefault { hand = [], hasPlayed = False } (getAt (getPlayerTurn gameState) (getPlayerStates gameState))
+
+
+getCurrentPlayerHand : GameState -> PlayerHand
+getCurrentPlayerHand gameState =
+    getCurrentPlayerState gameState
+        |> getHand
+
+
+getCurrentPlayerHasPlayed : GameState -> Bool
+getCurrentPlayerHasPlayed gameState =
+    getCurrentPlayerState gameState
+        |> getHasPlayed
 
 
 tileIsJoker : Tile -> Bool
